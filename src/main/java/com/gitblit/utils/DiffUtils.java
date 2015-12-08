@@ -76,7 +76,7 @@ public class DiffUtils {
 	 * Enumeration for the diff output types.
 	 */
 	public static enum DiffOutputType {
-		PLAIN, HTML;
+		PLAIN, HTML_V, HTML_H;
 
 		public static DiffOutputType forName(String name) {
 			for (DiffOutputType type : values()) {
@@ -378,8 +378,11 @@ public class DiffUtils {
 
 			DiffFormatter df;
 			switch (outputType) {
-			case HTML:
-				df = new GitBlitDiffFormatter(commit.getName(), path, handler, tabLength);
+			case HTML_V:
+				df = new GitBlitDiffFormatter(commit.getName(), path, handler, tabLength, DiffOutputType.HTML_V);
+				break;
+			case HTML_H:
+				df = new GitBlitDiffFormatter(commit.getName(), path, handler, tabLength, DiffOutputType.HTML_H);
 				break;
 			case PLAIN:
 			default:

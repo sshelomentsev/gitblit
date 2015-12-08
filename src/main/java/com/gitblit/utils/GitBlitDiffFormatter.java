@@ -129,6 +129,10 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 
 	private int tabLength;
 
+	private DiffUtils.DiffOutputType outputType;
+
+	private int currentLine;
+
 	/**
 	 * A {@link ResettableByteArrayOutputStream} that intercept the "Binary files differ" message produced
 	 * by the super implementation. Unfortunately the super implementation has far too many things private;
@@ -164,12 +168,15 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 
 	}
 
-	public GitBlitDiffFormatter(String commitId, String path, BinaryDiffHandler handler, int tabLength) {
+	public GitBlitDiffFormatter(String commitId, String path, BinaryDiffHandler handler, int tabLength, DiffUtils
+		.DiffOutputType outputType) {
 		super(new DiffOutputStream());
 		this.os = (DiffOutputStream) getOutputStream();
 		this.os.setFormatter(this, handler);
 		this.diffStat = new DiffStat(commitId);
 		this.tabLength = tabLength;
+		this.outputType = outputType;
+		this.currentLine = 0;
 		// If we have a full commitdiff, install maxima to avoid generating a super-long diff listing that
 		// will only tax the browser too much.
 		maxDiffLinesPerFile = path != null ? -1 : getLimit(DIFF_LIMIT_PER_FILE_KEY, 500, DIFF_LIMIT_PER_FILE);
@@ -419,8 +426,39 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 			reset();
 		} else {
 			// output diff
-			os.write("<tr class='diff-row'>".getBytes());
-			switch (prefix) {
+			if (outputType.equals(DiffUtils.DiffOutputType.HTML_H)) {
+				this.currentLine = cur;
+				writeLineH(prefix, text, cur);
+			} else {
+				writeLineV(prefix, text, cur);
+			}
+		}
+	}
+
+	@Override
+	protected void writeRemovedLine(RawText text, int line) throws IOException {
+		System.out.println("write removed line = " + line);
+		super.writeRemovedLine(text, line);
+	}
+
+	@Override
+	protected void writeAddedLine(RawText text, int line) throws IOException {
+		System.out.println("write added line = " + line);
+		super.writeAddedLine(text, line);
+	}
+
+	@Override
+	protected void writeContextLine(RawText text, int line) throws IOException {
+		System.out.println("write context line = " + line);
+		super.writeContextLine(text, line);
+	}
+
+	private void writeLineH(final char prefix, final RawText text, final int cur) throws IOException {
+	}
+
+	private void writeLineV(final char prefix, final RawText text, final int cur) throws IOException {
+		os.write("<tr class='diff-row'>".getBytes());
+		switch (prefix) {
 			case '+':
 				os.write(("<th class='diff-line'></th><th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
 				os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name +
@@ -438,16 +476,15 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 				break;
 			default:
 				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' " +
-						"data-lineno='" + (right++) + "'>").getBytes());
+					"data-lineno='" + (right++) + "'>").getBytes());
 				os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
 				os.write(("</th>").getBytes());
 				os.write("<th class='diff-state'></th>".getBytes());
 				os.write("<td class='diff-cell context2'>".getBytes());
 				break;
-			}
-			os.write(encode(codeLineToHtml(prefix, text.getString(cur))));
-			os.write("</td></tr>\n".getBytes());
 		}
+		os.write(encode(codeLineToHtml(prefix, text.getString(cur))));
+		os.write("</td></tr>\n".getBytes());
 	}
 
 	/**
