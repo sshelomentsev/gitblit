@@ -822,7 +822,10 @@ public class TicketPage extends RepositoryPage {
 							CommitPage.class, WicketUtils.newObjectParameter(repositoryName, commit.getName()), true));
 					item.add(new LinkPanel("diff", "link", getString("gb.diff"), CommitDiffPage.class,
 							WicketUtils.newObjectParameter(repositoryName, commit.getName()), true));
-					item.add(new Label("title", StringUtils.trimString(commit.getShortMessage(), Constants.LEN_SHORTLOG_REFS)));
+					item.add(new LinkPanel("unifieddiff", "link", getString("gb.unifieddiff"), UnifiedDiffViewer
+						.class, WicketUtils.newObjectParameter(repositoryName, commit.getName()), true));
+					item.add(new Label("title", StringUtils.trimString(commit.getShortMessage(), Constants
+						.LEN_SHORTLOG_REFS)));
 					item.add(WicketUtils.createDateLabel("commitDate", JGitUtils.getAuthorDate(commit), GitBlitWebSession
 							.get().getTimezone(), getTimeUtils(), false));
 					item.add(new DiffStatPanel("commitDiffStat", 0, 0, true));

@@ -419,20 +419,28 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 			reset();
 		} else {
 			// output diff
-			os.write("<tr>".getBytes());
+			os.write("<tr class='diff-row'>".getBytes());
 			switch (prefix) {
 			case '+':
-				os.write(("<th class='diff-line'></th><th class='diff-line' data-lineno='" + (right++) + "'></th>").getBytes());
+				os.write(("<th class='diff-line'></th><th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
+				os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name +
+					"'></span>").getBytes());
+				os.write(("</th>").getBytes());
 				os.write("<th class='diff-state diff-state-add'></th>".getBytes());
 				os.write("<td class='diff-cell add2'>".getBytes());
 				break;
 			case '-':
-				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line'></th>").getBytes());
+				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line'>").getBytes());
+				os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
+				os.write(("</th>").getBytes());
 				os.write("<th class='diff-state diff-state-sub'></th>".getBytes());
 				os.write("<td class='diff-cell remove2'>".getBytes());
 				break;
 			default:
-				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' data-lineno='" + (right++) + "'></th>").getBytes());
+				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' " +
+						"data-lineno='" + (right++) + "'>").getBytes());
+				os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
+				os.write(("</th>").getBytes());
 				os.write("<th class='diff-state'></th>".getBytes());
 				os.write("<td class='diff-cell context2'>".getBytes());
 				break;
@@ -490,7 +498,10 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 			} else {
 				boolean gitLinkDiff = line.length() > 0 && line.substring(1).startsWith("Subproject commit");
 				if (gitLinkDiff) {
-					sb.append("<tr><th class='diff-line'></th><th class='diff-line'></th>");
+					sb.append("<tr class='diff-row'><th class='diff-line'></th><th class='diff-line'>");
+					sb.append("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name +
+						"'></span>");
+					sb.append("</th>");
 					if (line.charAt(0) == '+') {
 						sb.append("<th class='diff-state diff-state-add'></th><td class=\"diff-cell add2\">");
 					} else {
@@ -507,7 +518,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 		}
 		if (truncated) {
 			sb.append(MessageFormat.format("<div class='header'><div class='diffHeader'>{0}</div></div>",
-					StringUtils.escapeForHtml(getMsg("gb.diffTruncated", "Diff truncated after the above file"), false)));
+				StringUtils.escapeForHtml(getMsg("gb.diffTruncated", "Diff truncated after the above file"), false)));
 			// List all files not shown. We can be sure we do have at least one path in skipped.
 			sb.append("<div class='diff'><table cellpadding='0'><tbody><tr><td class='diff-cell' colspan='4'>");
 			String deletedSuffix = StringUtils.escapeForHtml(getMsg("gb.diffDeletedFileSkipped", "(deleted)"), false);
@@ -517,15 +528,39 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 					sb.append('\n');
 				}
 				if (ChangeType.DELETE.equals(entry.getChangeType())) {
-					sb.append("<span id=\"n" + entry.getOldId().name() + "\">" + StringUtils.escapeForHtml(entry.getOldPath(), false) + ' ' + deletedSuffix + "</span>");
+					sb.append("<span id=\"n" + entry.getOldId().name() + "\">" + StringUtils.escapeForHtml(entry
+						.getOldPath(), false) + ' ' + deletedSuffix + "</span>");
 				} else {
-					sb.append("<span id=\"n" + entry.getNewId().name() + "\">" + StringUtils.escapeForHtml(entry.getNewPath(), false) + "</span>");
+					sb.append("<span id=\"n" + entry.getNewId().name() + "\">" + StringUtils.escapeForHtml(entry
+						.getNewPath(), false) + "</span>");
 				}
 				first = false;
 			}
 			skipped.clear();
 			sb.append("</td></tr></tbody></table></div>");
 		}
+
+		/*
+		sb.append("<div class='inline-comment-panel' style='border: 1px solid #ccc;'>");
+		sb.append("<ul class='nav nav-pills' style='margin: 2px 5px !important'>");
+		sb.append("<li class='active'><a href='#write' data-toggle='tab'>Write</a></li>");
+		sb.append("<li><a href='#preview' data-toggle='tab'>Preview</a></li> </ul>");
+		sb.append("<div class='tab-content'>");
+		sb.append("<div class='tab-pane active' id='write'>");
+		sb.append("<textarea class='span7' style='height:7em;border-color:#ccc;border-right:0px;border-left:0px;border-radius:0px;box-shadow: none;'></textarea>");
+		sb.append("</div>");
+		sb.append("<div class='tab-pane' id='preview'>");
+		sb.append("<div class='preview' style='height:7em;border:1px solid #ccc;border-right:0px;border-left:0px;margin-bottom:9px;padding:4px;background-color:#ffffff;'>");
+		sb.append("<div class='markdown' wicket:id='markdownPreview'></div>");
+		sb.append("</div> </div> </div>");
+
+		sb.append("<div style='text-align:right;padding-right:5px;'>");
+		sb.append("<form style='margin-bottom:9px;' action=''>");
+		sb.append("<input class='btn btn-appmenu' type='submit' value='comment'></input>");
+		sb.append("</form> </div> </div>");
+		*/
+
+
 		return sb.toString();
 	}
 

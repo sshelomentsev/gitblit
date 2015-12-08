@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+import com.gitblit.utils.JGitUtils;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.slf4j.Logger;
@@ -1058,6 +1059,29 @@ public abstract class ITicketService implements IManager {
 			}
 			return ticket;
 		}
+		return null;
+	}
+
+	public final TicketModel updateTicket(RepositoryModel repository, Change change) {
+		if (change == null) {
+			throw new RuntimeException("change can not be null!");
+		}
+
+		if (StringUtils.isEmpty(change.author)) {
+			throw new RuntimeException("must specify a change author!");
+		}
+
+		//TODO
+		//use commit hash here
+		long ticketId = 1;
+		TicketKey key = new TicketKey(repository, ticketId);
+		ticketsCache.invalidate(key);
+
+		boolean success = commitChangeImpl(repository, ticketId, change);
+		if (success) {
+			TicketModel ticket = getTicket(repository, ticketId);
+		}
+
 		return null;
 	}
 

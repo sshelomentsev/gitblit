@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml"  
       xmlns:wicket="http://wicket.apache.org/dtds.data/wicket-xhtml1.3-strict.dtd"  
       xml:lang="en"  
-      lang="en"> 
+      lang="en">
 
 <body>
 <wicket:extend>
@@ -340,7 +340,12 @@ pt push</pre>
 				<tbody>
 					<tr wicket:id="commit">
 						<td class="hidden-phone"><span wicket:id="authorAvatar">[avatar]</span> <span wicket:id="author">[author]</span></td>
-						<td><span class="shortsha1" wicket:id="commitId">[commit id]</span><span class="hidden-phone" style="padding-left: 20px;" wicket:id="diff">[diff]</span></td>						
+						<td>
+							<span class="shortsha1" wicket:id="commitId">[commit id]</span>
+							<span class="hidden-phone" style="padding-left: 20px;" wicket:id="diff">[diff]</span>
+							<span class="hidden-phone" style="padding-left: 40px;" wicket:id="unifieddiff">
+								[unified diff]</span>
+						</td>
 						<td><span class="attribution-text" wicket:id="title">[title]</span></td>
 						<td style="padding:8px 0px;text-align:right;"><span style="padding-right:40px;"><span wicket:id="commitDiffStat"></span></span></td>			
 						<td style="text-align:right;"><span class="attribution-date" wicket:id="commitDate">[commit date]</span></td>	

@@ -19,10 +19,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import com.gitblit.models.RepositoryModel;
+import com.gitblit.models.TicketModel;
+import com.gitblit.models.UserModel;
+import com.gitblit.wicket.GitBlitWebSession;
+import com.gitblit.wicket.panels.CommentPanel;
 import org.apache.wicket.PageParameters;
+import org.apache.wicket.markup.html.CSSPackageResource;
+import org.apache.wicket.markup.html.JavascriptPackageResource;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.link.ExternalLink;
+import org.apache.wicket.markup.html.panel.Fragment;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.markup.repeater.data.ListDataProvider;
@@ -84,6 +92,10 @@ public class CommitDiffPage extends RepositoryPage {
 
 		add(new CommitHeaderPanel("commitHeader", repositoryName, commit));
 
+		add(JavascriptPackageResource.getHeaderContribution("bootstrap/js/jquery.js"));
+		add(JavascriptPackageResource.getHeaderContribution("features/comments.js"));
+		add(CSSPackageResource.getHeaderContribution("features/comments.css"));
+
 		final List<String> imageExtensions = app().settings().getStrings(Keys.web.imageExtensions);
 		final ImageDiffHandler handler = new ImageDiffHandler(this, repositoryName,
 				parents.isEmpty() ? null : parents.get(0), commit.getName(), imageExtensions);
@@ -103,6 +115,26 @@ public class CommitDiffPage extends RepositoryPage {
 		add(new DiffStatPanel("diffStat", insertions, deletions));
 
 		addFullText("fullMessage", commit.getFullMessage());
+
+		final UserModel user = GitBlitWebSession.get().getUser() == null ? UserModel.ANONYMOUS : GitBlitWebSession.get().getUser();
+		System.out.println("user = " + user.getName());
+		final RepositoryModel repository = getRepositoryModel();
+		System.out.println("Rep = " + repository.name);
+		long ticketId = 1;
+		final TicketModel ticket = app().tickets().getTicket(repository, ticketId);
+		System.out.println("add comment1");
+
+		final int avatarWidth = 40;
+		Fragment newComment = new Fragment("newComment", "newCommentFragment", this);
+		AvatarImage img = new AvatarImage("newCommentAvatar", user.username, user.emailAddress,
+			"gravatar-round", avatarWidth, true);
+		newComment.add(img);
+		CommentPanel commentPanel = new CommentPanel("commentPanel", user, ticket, null, CommitDiffPage.class);
+		commentPanel.setRepository(repositoryName);
+		newComment.add(commentPanel);
+		add(newComment);
+		System.out.println("add comment2");
+
 
 		// git notes
 		List<GitNote> notes = JGitUtils.getNotesOnCommit(r, commit);

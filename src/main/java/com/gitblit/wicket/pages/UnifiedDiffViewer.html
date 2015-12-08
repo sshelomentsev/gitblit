@@ -1,0 +1,22 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:wicket="http://wicket.apache.org/dtds.data/wicket-xhtml1.3-strict.dtd"
+      xml:lang="en"
+      lang="en"> 
+
+<body>
+<wicket:extend>
+
+    <!-- commitdiff nav links -->
+    <div class="page_nav2">
+        <wicket:message key="gb.parent"></wicket:message>: <span wicket:id="parentLink">[parent link]</span> | <a wicket:id="patchLink"><wicket:message key="gb.patch"></wicket:message></a> | <a wicket:id="commitLink"><wicket:message key="gb.commit"></wicket:message></a>
+    </div>
+
+    <!-- commit header -->
+    <div wicket:id="commitHeader">[commit header]</div>
+
+    <!-- full message -->
+    <div wicket:id="fullMessage">[commit message]</div>
+</wicket:extend>
+</body>
+</html>
