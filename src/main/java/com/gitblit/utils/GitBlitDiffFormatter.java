@@ -441,7 +441,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 		System.out.println("write removed line = " + line);
 		if (outputType.equals(DiffUtils.DiffOutputType.HTML_H)) {
 			os.write("<tr class='diff-row'>".getBytes());
-			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'>").getBytes());
+			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line'>").getBytes());
 			os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
 			os.write(("</th>").getBytes());
 			os.write("<th class='diff-state diff-state-sub'></th>".getBytes());
@@ -457,7 +457,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 	protected void writeAddedLine(RawText text, int line) throws IOException {
 		System.out.println("write added line = " + line);
 		if (outputType.equals(DiffUtils.DiffOutputType.HTML_H)) {
-			os.write(("<th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
+			os.write(("<th class='diff-line'></th><th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
 			os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name +
 				"'></span>").getBytes());
 			os.write(("</th>").getBytes());
@@ -478,7 +478,8 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 		if (outputType.equals(DiffUtils.DiffOutputType.HTML_H)) {
 			os.write("<tr class='diff-row'>".getBytes());
 
-			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'>").getBytes());
+			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' " +
+				"data-lineno='" + (right++) + "'>").getBytes());
 			os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
 			os.write(("</th>").getBytes());
 			os.write("<th class='diff-state'></th>".getBytes());
@@ -486,7 +487,8 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 			os.write(encode(codeLineToHtml(' ', text.getString(line))));
 			os.write("</td>".getBytes());
 
-			os.write(("<th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
+			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' " +
+				"data-lineno='" + (right++) + "'>").getBytes());
 			os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
 			os.write(("</th>").getBytes());
 			os.write("<th class='diff-state'></th>".getBytes());
