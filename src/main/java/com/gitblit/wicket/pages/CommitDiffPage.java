@@ -100,8 +100,10 @@ public class CommitDiffPage extends RepositoryPage {
 		final ImageDiffHandler handler = new ImageDiffHandler(this, repositoryName,
 				parents.isEmpty() ? null : parents.get(0), commit.getName(), imageExtensions);
 		final int tabLength = app().settings().getInteger(Keys.web.tabLength, 4);
-		final DiffOutput diff = DiffUtils.getCommitDiff(r, commit, diffComparator, DiffOutputType.HTML_V, handler,
-			tabLength);
+		//final DiffOutput diff = DiffUtils.getCommitDiff(r, commit, diffComparator, DiffOutputType.HTML_V, handler,
+		// tabLength);
+		final DiffOutput diff = DiffUtils.getCommitDiff(r, commit, diffComparator, DiffOutputType.HTML_H, handler,
+			 tabLength);
 		if (handler.getImgDiffCount() > 0) {
 			addBottomScript("scripts/imgdiff.js"); // Tiny support script for image diffs
 		}
