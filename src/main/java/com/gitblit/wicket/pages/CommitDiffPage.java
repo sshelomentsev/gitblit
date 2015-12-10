@@ -68,6 +68,7 @@ public class CommitDiffPage extends RepositoryPage {
 		final Repository r = getRepository();
 		final RevCommit commit = getCommit();
 		final DiffComparator diffComparator = WicketUtils.getDiffComparator(params);
+		final DiffOutputType oType = WicketUtils.getDiffOutputType(params);
 
 		List<String> parents = new ArrayList<String>();
 		if (commit.getParentCount() > 0) {
@@ -88,13 +89,24 @@ public class CommitDiffPage extends RepositoryPage {
 		add(new BookmarkablePageLink<Void>("commitLink", CommitPage.class,
 				WicketUtils.newObjectParameter(repositoryName, objectId)));
 		add(new LinkPanel("whitespaceLink", null, getString(diffComparator.getOpposite().getTranslationKey()),
-				CommitDiffPage.class, WicketUtils.newDiffParameter(repositoryName, objectId, diffComparator.getOpposite())));
+				CommitDiffPage.class, WicketUtils.newDiffParameter(repositoryName, objectId, diffComparator
+			.getOpposite())));
+		if (oType.equals(DiffOutputType.HTML_H)) {
+			add(new LinkPanel("switchViewer", null, "unified viewer", CommitDiffPage.class, WicketUtils
+				.newObjectParameter(repositoryName, objectId, 0), true));
+		} else {
+			add(new LinkPanel("switchViewer", null, "side by side viewer", CommitDiffPage.class, WicketUtils
+				.newObjectParameter(repositoryName, objectId, 1), true));
+		}
+
 
 		add(new CommitHeaderPanel("commitHeader", repositoryName, commit));
 
 		add(JavascriptPackageResource.getHeaderContribution("bootstrap/js/jquery.js"));
+		add(JavascriptPackageResource.getHeaderContribution("features/jquery-ui.js"));
 		add(JavascriptPackageResource.getHeaderContribution("features/comments.js"));
 		add(CSSPackageResource.getHeaderContribution("features/comments.css"));
+		add(CSSPackageResource.getHeaderContribution("features/jquery-ui.css"));
 
 		final List<String> imageExtensions = app().settings().getStrings(Keys.web.imageExtensions);
 		final ImageDiffHandler handler = new ImageDiffHandler(this, repositoryName,
@@ -102,8 +114,9 @@ public class CommitDiffPage extends RepositoryPage {
 		final int tabLength = app().settings().getInteger(Keys.web.tabLength, 4);
 		//final DiffOutput diff = DiffUtils.getCommitDiff(r, commit, diffComparator, DiffOutputType.HTML_V, handler,
 		// tabLength);
-		final DiffOutput diff = DiffUtils.getCommitDiff(r, commit, diffComparator, DiffOutputType.HTML_H, handler,
-			 tabLength);
+		//final DiffOutput diff = DiffUtils.getCommitDiff(r, commit, diffComparator, DiffOutputType.HTML_H, handler,
+		//	tabLength);
+		final DiffOutput diff = DiffUtils.getCommitDiff(r, commit, diffComparator, oType, handler, tabLength);
 		if (handler.getImgDiffCount() > 0) {
 			addBottomScript("scripts/imgdiff.js"); // Tiny support script for image diffs
 		}
@@ -119,6 +132,7 @@ public class CommitDiffPage extends RepositoryPage {
 
 		addFullText("fullMessage", commit.getFullMessage());
 
+		/*
 		final UserModel user = GitBlitWebSession.get().getUser() == null ? UserModel.ANONYMOUS : GitBlitWebSession.get().getUser();
 		System.out.println("user = " + user.getName());
 		final RepositoryModel repository = getRepositoryModel();
@@ -137,6 +151,7 @@ public class CommitDiffPage extends RepositoryPage {
 		newComment.add(commentPanel);
 		add(newComment);
 		System.out.println("add comment2");
+		*/
 
 
 		// git notes

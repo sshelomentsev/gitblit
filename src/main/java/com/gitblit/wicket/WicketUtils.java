@@ -26,6 +26,7 @@ import java.util.TimeZone;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.gitblit.utils.DiffUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.Request;
@@ -331,6 +332,16 @@ public class WicketUtils {
 		return new PageParameters(parameterMap);
 	}
 
+	public static PageParameters newObjectParameter(String repositoryName, String objectId, int diffType) {
+		Map<String, String> parameterMap = new HashMap<>();
+		parameterMap.put("r", repositoryName);
+		parameterMap.put("otype", String.valueOf(diffType));
+		if (!StringUtils.isEmpty(objectId)) {
+			parameterMap.put("h", objectId);
+		}
+		return new PageParameters(parameterMap);
+	}
+
 	public static PageParameters newDiffParameter(String repositoryName,
 			String objectId, DiffComparator diffComparator) {
 		Map<String, String> parameterMap = new HashMap<String, String>();
@@ -523,6 +534,12 @@ public class WicketUtils {
 	public static DiffComparator getDiffComparator(PageParameters params) {
 		int ordinal = params.getInt("w", 0);
 		return DiffComparator.values()[ordinal];
+	}
+
+	public static DiffUtils.DiffOutputType getDiffOutputType(PageParameters params) {
+		int ordinal = params.getInt("otype", 0);
+		System.out.println("O type = " + ordinal);
+		return 0 == ordinal ? DiffUtils.DiffOutputType.HTML_V : DiffUtils.DiffOutputType.HTML_H;
 	}
 
 	public static int getPage(PageParameters params) {

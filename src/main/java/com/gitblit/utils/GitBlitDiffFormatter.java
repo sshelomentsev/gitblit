@@ -350,8 +350,13 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 			if (nofLinesCurrent > maxDiffLinesPerFile && maxDiffLinesPerFile > 0) {
 				reset();
 			} else {
-				os.write("<tr><th class='diff-line' data-lineno='..'></th><th class='diff-line' data-lineno='..'></th><th class='diff-state'></th><td class='hunk_header'>"
+				if (outputType.equals(DiffUtils.DiffOutputType.HTML_V)) {
+					os.write("<tr><th class='diff-line' data-lineno='..'></th><th class='diff-line' data-lineno='..'></th><th class='diff-state'></th><td class='hunk_header'>"
 						.getBytes());
+				} else {
+					os.write(("<tr><td class='diff-line' data-lineno='..'></th><th class='diff-state'></th><td " +
+						"colspan='4' class='hunk_header'>").getBytes());
+				}
 				os.write('@');
 				os.write('@');
 				writeRange('-', aStartLine + 1, aEndLine - aStartLine);
@@ -441,7 +446,8 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 		System.out.println("write removed line = " + line);
 		if (outputType.equals(DiffUtils.DiffOutputType.HTML_H)) {
 			os.write("<tr class='diff-row'>".getBytes());
-			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line'>").getBytes());
+			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'>").getBytes());
+			//os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line'>").getBytes());
 			os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
 			os.write(("</th>").getBytes());
 			os.write("<th class='diff-state diff-state-sub'></th>".getBytes());
@@ -457,7 +463,8 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 	protected void writeAddedLine(RawText text, int line) throws IOException {
 		System.out.println("write added line = " + line);
 		if (outputType.equals(DiffUtils.DiffOutputType.HTML_H)) {
-			os.write(("<th class='diff-line'></th><th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
+			os.write(("<th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
+			//os.write(("<th class='diff-line'></th><th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
 			os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name +
 				"'></span>").getBytes());
 			os.write(("</th>").getBytes());
@@ -478,18 +485,22 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 		if (outputType.equals(DiffUtils.DiffOutputType.HTML_H)) {
 			os.write("<tr class='diff-row'>".getBytes());
 
-			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' " +
-				"data-lineno='" + (right++) + "'>").getBytes());
-			os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
+			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'>").getBytes());
+			//os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' " +
+			//	"data-lineno='" + (right++) + "'>").getBytes());
+			os.write(("<span class='inline-comment octicon octicon-plus' data-line='" + left + "' data-path='" +
+				currentPath.name + "'></span>").getBytes());
 			os.write(("</th>").getBytes());
 			os.write("<th class='diff-state'></th>".getBytes());
 			os.write("<td class='diff-cell context2'>".getBytes());
 			os.write(encode(codeLineToHtml(' ', text.getString(line))));
 			os.write("</td>".getBytes());
 
-			os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' " +
-				"data-lineno='" + (right++) + "'>").getBytes());
-			os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
+			os.write(("<th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
+			//os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' " +
+			//	"data-lineno='" + (right++) + "'>").getBytes());
+			os.write(("<span class='inline-comment octicon octicon-plus' data-line='" + right + "' data-path='" +
+				currentPath.name + "'></span>").getBytes());
 			os.write(("</th>").getBytes());
 			os.write("<th class='diff-state'></th>".getBytes());
 			os.write("<td class='diff-cell context2'>".getBytes());
@@ -511,15 +522,19 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 		switch (prefix) {
 			case '+':
 				os.write(("<th class='diff-line'></th><th class='diff-line' data-lineno='" + (right++) + "'>").getBytes());
-				os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name +
+				os.write(("<span class='inline-comment octicon octicon-plus' data-line='" + right + "' data-path='"
+					+ currentPath.name +
 					"'></span>").getBytes());
 				os.write(("</th>").getBytes());
 				os.write("<th class='diff-state diff-state-add'></th>".getBytes());
 				os.write("<td class='diff-cell add2'>".getBytes());
 				break;
 			case '-':
-				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line'>").getBytes());
-				os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
+				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line'>").getBytes
+					());
+				os.write(("<span class='inline-comment octicon octicon-plus' data-line='" + left + "' data-path='" +
+					currentPath.name +
+					"'></span>").getBytes());
 				os.write(("</th>").getBytes());
 				os.write("<th class='diff-state diff-state-sub'></th>".getBytes());
 				os.write("<td class='diff-cell remove2'>".getBytes());
@@ -527,7 +542,8 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 			default:
 				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' " +
 					"data-lineno='" + (right++) + "'>").getBytes());
-				os.write(("<span class='inline-comment octicon octicon-plus' data-path='" + currentPath.name + "'></span>").getBytes());
+				os.write(("<span class='inline-comment octicon octicon-plus' data-line='" + right + "' data-path='"
+					+ currentPath.name + "'></span>").getBytes());
 				os.write(("</th>").getBytes());
 				os.write("<th class='diff-state'></th>".getBytes());
 				os.write("<td class='diff-cell context2'>".getBytes());
