@@ -19,18 +19,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.gitblit.models.RepositoryModel;
-import com.gitblit.models.TicketModel;
-import com.gitblit.models.UserModel;
-import com.gitblit.wicket.GitBlitWebSession;
-import com.gitblit.wicket.panels.CommentPanel;
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.markup.html.CSSPackageResource;
 import org.apache.wicket.markup.html.JavascriptPackageResource;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.link.ExternalLink;
-import org.apache.wicket.markup.html.panel.Fragment;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.markup.repeater.data.ListDataProvider;
@@ -95,10 +89,9 @@ public class CommitDiffPage extends RepositoryPage {
 			add(new LinkPanel("switchViewer", null, "unified viewer", CommitDiffPage.class, WicketUtils
 				.newObjectParameter(repositoryName, objectId, 0), true));
 		} else {
-			add(new LinkPanel("switchViewer", null, "side by side viewer", CommitDiffPage.class, WicketUtils
+			add(new LinkPanel("switchViewer", null, "split viewer", CommitDiffPage.class, WicketUtils
 				.newObjectParameter(repositoryName, objectId, 1), true));
 		}
-
 
 		add(new CommitHeaderPanel("commitHeader", repositoryName, commit));
 

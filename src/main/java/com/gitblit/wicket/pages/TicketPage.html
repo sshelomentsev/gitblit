@@ -342,9 +342,9 @@ pt push</pre>
 						<td class="hidden-phone"><span wicket:id="authorAvatar">[avatar]</span> <span wicket:id="author">[author]</span></td>
 						<td>
 							<span class="shortsha1" wicket:id="commitId">[commit id]</span>
-							<span class="hidden-phone" style="padding-left: 20px;" wicket:id="diff">[diff]</span>
+							<span class="hidden-phone" style="padding-left: 20px;" wicket:id="diff">[unified diff]</span>
 							<span class="hidden-phone" style="padding-left: 40px;" wicket:id="unifieddiff">
-								[side by side diff]</span>
+								[split diff]</span>
 						</td>
 						<td><span class="attribution-text" wicket:id="title">[title]</span></td>
 						<td style="padding:8px 0px;text-align:right;"><span style="padding-right:40px;"><span wicket:id="commitDiffStat"></span></span></td>			
@@ -392,11 +392,20 @@ pt push</pre>
 			<div wicket:id="patchsetStat"></div>
 		</div>
 	</div>
-	
+
+	<div style="padding: 10px;color: #444;background:white;border-top:1px solid #ccc;">
+		<span style="font-weight:bold;padding-right:10px;">
+			<wicket:message key="gb.ciapprovals"></wicket:message>
+			<span>
+				<a href='http://localhost:8080/jenkins/job/flyweight/'><img src='http://localhost:8080/jenkins/buildStatus/icon?job=flyweight'></a>
+			</span>
+		</span>
+	</div>
+
 	<div style="padding: 10px;color: #444;background:white;border-top:1px solid #ccc;">
 		<div class="pull-right" wicket:id="reviewControls"></div>
 		<span style="font-weight:bold;padding-right:10px;"><wicket:message key="gb.reviews"></wicket:message></span> <span wicket:id="reviews" style="padding-right:10px;"><i style="font-size:16px;" wicket:id="score"></i> <span wicket:id="reviewer"></span></span>
-	</div>  		
+	</div>
 				
 	<div id="bodyPatchset" class="accordion-body collapse" style="clear:both;">
 		<div class="accordion-inner">
