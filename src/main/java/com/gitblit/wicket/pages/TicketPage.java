@@ -74,6 +74,8 @@ import com.gitblit.models.TicketModel.PatchsetType;
 import com.gitblit.models.TicketModel.Review;
 import com.gitblit.models.TicketModel.Score;
 import com.gitblit.models.TicketModel.Status;
+import com.gitblit.models.TicketModel.CiVerification;
+import com.gitblit.models.TicketModel.CIScore;
 import com.gitblit.models.UserModel;
 import com.gitblit.tickets.TicketIndexer.Lucene;
 import com.gitblit.tickets.TicketLabel;
@@ -1070,6 +1072,40 @@ public class TicketPage extends RepositoryPage {
 		panel.add(compareMenu);
 
 
+		// CI approvals
+		CiVerification v = ticket.getCiApproval();
+		if (null == v) {
+			v = new CiVerification(CIScore.in_progress);
+		}
+		panel.add(new Label("approvals", v.toString()));
+		/*
+		List<Change> approvals = ticket.getCiApprovals(currentPatchset);
+		ListDataProvider<Change> approvalDp = new ListDataProvider<>(approvals);
+		DataView<Change> approvalsView = new DataView<Change>("approvals", approvalDp) {
+			@Override
+			protected void populateItem(Item<Change> item) {
+				System.out.println("populate for approvals");
+				Change change = item.getModelObject();
+				CiVerification verification = change.verification;
+				System.out.println("verification = " + change.verification.toString());
+				System.out.println("score = " + change.verification.score.getValue());
+				CIScore score = CIScore.valueOf("success");
+				System.out.println("created = " + score.getValue());
+				Label scoreLabel = new Label("score");
+				String name = getRepositoryName();
+				System.out.println("rep name = " + name);
+				String scoreClass = getCIScoreClass(verification.score);
+				String tooltip = getCIScoreDescription(verification.score);
+				WicketUtils.setCssClass(scoreLabel, scoreClass);
+				if (!StringUtils.isEmpty(tooltip)) {
+					WicketUtils.setHtmlTooltip(scoreLabel, tooltip);
+				}
+				item.add(scoreLabel);
+			}
+		};
+		panel.add(approvalsView);
+		*/
+
 		// reviews
 		List<Change> reviews = ticket.getReviews(currentPatchset);
 		ListDataProvider<Change> reviewsDp = new ListDataProvider<Change>(reviews);
@@ -1255,6 +1291,48 @@ public class TicketPage extends RepositoryPage {
 		};
 	}
 
+	protected String getCIScoreClass(CIScore score) {
+		switch (score) {
+			case success:
+				return "fa fa-exclamation-circle";
+			case unstable:
+				return "fa fa-exclamation-circle";
+			case failed:
+				return "fa fa-exclamation-circle";
+			case in_progress:
+				return "fa fa-exclamation-circle";
+			case aborted:
+				return "fa fa-exclamation-circle";
+			default:
+				return "fa fa-exclamation-circle";
+		}
+	}
+
+	protected String getCIScoreDescription(CIScore score) {
+		String description;
+		switch (score) {
+			case success:
+				description = getString("gb.CISuccess");
+				break;
+			case unstable:
+				description = getString("gb.CIUnstable");
+				break;
+			case failed:
+				description = getString("gb.CIFailed");
+				break;
+			case in_progress:
+				description = getString("gb.CIProgress");
+				break;
+			case aborted:
+				description = getString("gb.CIAborted");
+				break;
+			default:
+				description = getString("gb.CINotVerified");
+				break;
+		}
+		return String.format("%1$s (%2$+d)", description, score.getValue());
+	}
+
 	protected String getScoreClass(Score score) {
 		switch (score) {
 		case vetoed:
@@ -1292,6 +1370,8 @@ public class TicketPage extends RepositoryPage {
 		}
 		return String.format("%1$s (%2$+d)", description, score.getValue());
 	}
+
+
 
 	protected void review(Score score) {
 		UserModel user = GitBlitWebSession.get().getUser();
@@ -1337,7 +1417,6 @@ public class TicketPage extends RepositoryPage {
 	 * Adds a merge panel for the patchset to the markup container.  The panel
 	 * may just a message if the patchset can not be merged.
 	 *
-	 * @param c
 	 * @param user
 	 * @param repository
 	 */

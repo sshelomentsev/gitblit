@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.gitblit.models.TicketModel;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import javax.servlet.ServletException;
@@ -421,6 +422,29 @@ public class RpcServlet extends JsonServlet {
 					RepositoryModel model = gitblit.getRepositoryModel(objectName);
 					gitblit.getTicketService().reindex(model);
 				}
+			} else {
+				response.sendError(notAllowedCode);
+			}
+		} else if (RpcRequest.UPDATE_TICKET_STATUS.equals(reqType)) {
+			if (allowManagement) {
+				Map<String, String> map = deserialize(request, response, RpcUtils.SETTINGS_TYPE);
+				System.out.println("DESERIALIZED REQUEST");
+				for (Map.Entry<String, String> entry : map.entrySet()) {
+					System.out.println(entry.getKey() + " -> " + entry.getValue());
+				}
+
+				String repository = map.get("repository");
+				long ticketId = Integer.valueOf(map.get("ticketId"));
+				int score = Integer.valueOf(map.get("result"));
+				String jobUrl = map.get("jobUrl");
+
+				RepositoryModel model = gitblit.getRepositoryModel(repository);
+				TicketModel ticketModel = gitblit.getTicketService().getTicket(model, ticketId);
+				TicketModel.CIScore ciScore = TicketModel.CIScore.fromScore(score);
+				TicketModel.CiVerification verification = new TicketModel.CiVerification(ciScore);
+				verification.jobUrl = jobUrl;
+				ticketModel.verification = verification;
+				result = "ZBS";
 			} else {
 				response.sendError(notAllowedCode);
 			}

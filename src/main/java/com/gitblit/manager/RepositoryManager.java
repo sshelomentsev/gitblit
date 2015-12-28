@@ -1806,9 +1806,11 @@ public class RepositoryManager implements IRepositoryManager {
 	 */
 	@Override
 	public List<String> getPostReceiveScriptsInherited(RepositoryModel repository) {
+		System.out.println("REPOSITORY MANAGER CALL");
 		Set<String> scripts = new LinkedHashSet<String>();
 		// Global Scripts
 		for (String script : settings.getStrings(Keys.groovy.postReceiveScripts)) {
+			System.out.println("script = " + script);
 			if (script.endsWith(".groovy")) {
 				scripts.add(script.substring(0, script.lastIndexOf('.')));
 			} else {

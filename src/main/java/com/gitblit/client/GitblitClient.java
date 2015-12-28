@@ -272,9 +272,11 @@ public class GitblitClient implements Serializable {
 	 * @return a list of scripts
 	 */
 	public List<String> getPostReceiveScriptsInherited(RepositoryModel repository) {
+		System.out.println("GITBLIT CLIENT");
 		Set<String> scripts = new LinkedHashSet<String>();
 		// Global Scripts
 		for (String script : settings.get(Keys.groovy.postReceiveScripts).getStrings()) {
+			System.out.println("script = " + script);
 			if (script.endsWith(".groovy")) {
 				scripts.add(script.substring(0, script.lastIndexOf('.')));
 			} else {

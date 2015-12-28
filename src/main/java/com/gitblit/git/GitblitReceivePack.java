@@ -359,6 +359,17 @@ public class GitblitReceivePack extends ReceivePack implements PreReceiveHook, P
 		if (!ArrayUtils.isEmpty(repository.postReceiveScripts)) {
 			scripts.addAll(repository.postReceiveScripts);
 		}
+
+		System.out.println("POST RECEIVE SCRIPTS");
+		for (String s : repository.postReceiveScripts) {
+			System.out.println("s = " + s);
+		}
+
+		System.out.println("SCRIPTS");
+		for (String s : scripts) {
+			System.out.println("s = " + s);
+		}
+
 		runGroovy(commands, scripts);
 	}
 

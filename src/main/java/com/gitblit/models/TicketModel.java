@@ -94,6 +94,8 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	public Priority priority;
 	
 	public Severity severity;
+
+	public CiVerification verification;
 	
 	/**
 	 * Builds an effective ticket from the collection of changes.  A change may
@@ -295,6 +297,8 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		return Collections.emptyList();
 	}
 
+
+
 	public Attachment getAttachment(String name) {
 		Attachment attachment = null;
 		for (Change change : changes) {
@@ -413,6 +417,32 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		}
 		return new ArrayList<Change>(reviews.values());
 	}
+
+	public CiVerification getCiApproval() {
+		return this.verification;
+	}
+
+	/*
+	public List<Change> getCiApprovals(Patchset patchset) {
+		this.verification;
+		System.out.println("get ci approvals");
+		if (null == patchset) {
+			System.out.println("IS NULL");
+			return Collections.emptyList();
+		}
+
+		Map<String, Change> approvals = new LinkedHashMap<>();
+		System.out.println("changes size = " + changes.size());
+		for (Change change : changes) {
+			if (change.hasVerification() && change.verification.isVerifiedOf(patchset)) {
+				//TODO
+				//add approval name
+				approvals.put("AAA", change);
+			}
+		}
+		return new ArrayList<>(approvals.values());
+	}
+	*/
 
 
 	public boolean isApproved(Patchset patchset) {
@@ -616,6 +646,8 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 
 		public Review review;
 
+		public CiVerification verification;
+
 		private transient String id;
 
 		public Change(String author) {
@@ -648,6 +680,10 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 			return review != null;
 		}
 
+		public boolean hasVerification() {
+			return null != verification;
+		}
+
 		public boolean hasComment() {
 			return comment != null && !comment.isDeleted() && comment.text != null;
 		}
@@ -676,6 +712,11 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 			review = new Review(patchset.number, patchset.rev);
 			review.score = score;
 			return review;
+		}
+
+		public CiVerification verification(Patchset patchset, CIScore score) {
+			verification = new CiVerification(score);
+			return verification;
 		}
 
 		public boolean hasAttachments() {
@@ -1164,6 +1205,36 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		}
 	}
 
+	public static class CiVerification implements Serializable {
+
+		private static final long serialVersionUID = 1L;
+
+		public CIScore score;
+
+		public String jobUrl = "";
+
+		public CiVerification(CIScore score) {
+			this.score = score;
+		}
+
+		public boolean isUrl() {
+			return !jobUrl.trim().isEmpty();
+		}
+
+		/*
+		public boolean isVerifiedOf(Patchset p) {
+			return patchset == p.number;
+		}
+		*/
+
+		@Override
+		public String toString() {
+			String s = "CI status of ticket is " + score.toString().toUpperCase();
+			return s;
+		}
+
+	}
+
 	public static enum Score {
 		approved(2), looks_good(1), not_reviewed(0), needs_improvement(-1), vetoed(
 				-2);
@@ -1191,6 +1262,36 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 			}
 			throw new NoSuchElementException(String.valueOf(score));
 		}
+	}
+
+	public static enum CIScore {
+		success(0), unstable(1), failed(2), in_progress(3), aborted(4);
+
+		final int value;
+
+		CIScore(int value) {
+			this.value = value;
+		}
+
+		public int getValue() {
+			return value;
+		}
+
+		@Override
+		public String toString() {
+			return name().toLowerCase().replace('_', ' ');
+		}
+
+		public static CIScore fromScore(int score) {
+			for (CIScore s : values()) {
+				if (s.getValue() == score) {
+					return s;
+				}
+			}
+			throw new NoSuchElementException(String.valueOf(score));
+		}
+
+
 	}
 
 	public static enum Field {

@@ -21,6 +21,7 @@
 		<li><a href="#gc" data-toggle="tab"><wicket:message key="gb.gc"></wicket:message></a></li>
 		<li><a href="#misc" data-toggle="tab"><wicket:message key="gb.miscellaneous"></wicket:message></a></li>
         <li><a href="#admin" data-toggle="tab"><wicket:message key="gb.administration"></wicket:message></a></li>
+		<li><a href="#ci" data-toggle="tab"><wicket:message key="gb.ci"></wicket:message></a></li>
 	</ul>
 
 	<!-- tab content -->
@@ -186,6 +187,14 @@
             <h4><wicket:message key="gb.deleteRepositoryHeader"></wicket:message></h4>
             <p><wicket:message key="gb.deleteRepositoryDescription"></wicket:message></p>
             <input class="btn btn-danger" type="submit" value="Delete" wicket:message="value:gb.delete" wicket:id="delete" />
+		</div>
+
+		<!-- ci -->
+		<div class="tab-pane" id="ci">
+
+			<div wicket:id="enableCI"></div>
+			<div wicket:id="CItype"></div>
+			<div wicket:id="CIUrl"></div>
 		</div>
     
 		<div class="form-actions"><input class="btn btn-appmenu" type="submit" value="Save" wicket:message="value:gb.save" wicket:id="save" /> &nbsp; <input class="btn" type="submit" value="Cancel" wicket:message="value:gb.cancel" wicket:id="cancel" /></div>

@@ -94,6 +94,10 @@ public class RepositoryModel implements Serializable, Comparable<RepositoryModel
 	public Date lastGC;
 	public String sparkleshareId;
 
+	private boolean enableCI;
+	private String CIType;
+	private String CIUrl;
+
 	public RepositoryModel() {
 		this("", "", "", new Date(0));
 	}

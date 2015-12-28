@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.gitblit.transport.ssh.git.Receive;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.BatchRefUpdate;
 import org.eclipse.jgit.lib.NullProgressMonitor;
@@ -239,8 +240,19 @@ public class PatchsetReceivePack extends GitblitReceivePack {
 	/**	Process receive commands EXCEPT for Patchset commands. */
 	@Override
 	public void onPostReceive(ReceivePack rp, Collection<ReceiveCommand> commands) {
+		System.out.println("POST RECEIVE");
+		for (ReceiveCommand c : commands) {
+			System.out.println("M = " + c.getMessage() + " ref = " + c.getRefName());
+			System.out.println("class = " + c.getClass());
+		}
 		Collection<ReceiveCommand> filtered = excludePatchsetCommands(commands);
-		super.onPostReceive(rp, filtered);
+		System.out.println("FILTERED");
+		for (ReceiveCommand c : filtered) {
+			System.out.println("M = " + c.getMessage() + " ref = " + c.getRefName());
+			System.out.println("class = " + c.getClass());
+		}
+		System.out.println("Filtered size = " + filtered.size());
+		super.onPostReceive(rp, commands);
 
 		// send all queued ticket notifications after processing all patchsets
 		ticketNotifier.sendAll();
