@@ -18,8 +18,10 @@ if (repository.enableCI) {
 		ref = command.refName
 	}
 	def triggerUrl = repository.CIUrl + "/gitblit/notifyCommit?"
-	def params = "job=${repository.jobname}&branch=" + ref
-	def enc = URLEncoder.encode(params)
-	def url = triggerUrl + enc
-	new URL(url).getContent() 
+	def params = "repository=${repository.name}&job=${repository.jobname}&branch=" + ref
+	//def enc = URLEncoder.encode(params)
+	def url = triggerUrl + params
+	logger.info(url)
+	new URL(url)
+	//new URL(url).getContent() 
 }
