@@ -9,7 +9,6 @@ import org.eclipse.jgit.transport.ReceiveCommand
 import org.eclipse.jgit.transport.ReceiveCommand.Result
 import org.slf4j.Logger
 import java.net.URLEncoder
-
 logger.info("jenkins verification hook triggered by ${user.username} for ${repository.name}")
 
 if (repository.enableCI) {
@@ -22,6 +21,7 @@ if (repository.enableCI) {
 	//def enc = URLEncoder.encode(params)
 	def url = triggerUrl + params
 	logger.info(url)
-	new URL(url)
+	
+	new URL(url).getContent()
 	//new URL(url).getContent() 
 }
