@@ -361,6 +361,7 @@ public class GitblitReceivePack extends ReceivePack implements PreReceiveHook, P
 		}
 
 		System.out.println("POST RECEIVE SCRIPTS");
+		//repository.postReceiveScripts.contains("jenkins_verification")
 		for (String s : repository.postReceiveScripts) {
 			System.out.println("s = " + s);
 		}
@@ -383,7 +384,6 @@ public class GitblitReceivePack extends ReceivePack implements PreReceiveHook, P
 
 		// log ref changes
 		for (ReceiveCommand cmd : commands) {
-
 			if (Result.OK.equals(cmd.getResult())) {
 				// add some logging for important ref changes
 				switch (cmd.getType()) {
@@ -581,6 +581,7 @@ public class GitblitReceivePack extends ReceivePack implements PreReceiveHook, P
 		Binding binding = new Binding();
 		binding.setVariable("gitblit", gitblit);
 		binding.setVariable("repository", repository);
+		//binding.setVariable("repositoryModel", getRepositoryModel());
 		binding.setVariable("receivePack", this);
 		binding.setVariable("user", user);
 		binding.setVariable("commands", commands);

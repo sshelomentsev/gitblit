@@ -434,7 +434,7 @@ public class RpcServlet extends JsonServlet {
 				}
 
 				String repository = map.get("repository");
-				long ticketId = Integer.valueOf(map.get("ticketId"));
+				long ticketId = Long.valueOf(map.get("ticketId"));
 				int score = Integer.valueOf(map.get("result"));
 				String jobUrl = map.get("jobUrl");
 
@@ -448,6 +448,15 @@ public class RpcServlet extends JsonServlet {
 			} else {
 				response.sendError(notAllowedCode);
 			}
+		} else if (RpcRequest.TICKET_INFO.equals(reqType)) {
+			Map<String, String> map = deserialize(request, response, RpcUtils.SETTINGS_TYPE);
+			String repository = map.get("repository");
+			long ticketId = Long.valueOf(map.get("ticketId"));
+			RepositoryModel model = gitblit.getRepositoryModel(repository);
+			TicketModel ticketModel = gitblit.getTicketService().getTicket(model, ticketId);
+			Map<String, String> rsp = new HashMap<>();
+			rsp.put("url", gitblit.getTicketService().getTicketUrl(ticketModel));
+			result = rsp;
 		}
 
 		// send the result of the request

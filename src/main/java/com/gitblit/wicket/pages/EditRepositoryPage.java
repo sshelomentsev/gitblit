@@ -653,13 +653,15 @@ public class EditRepositoryPage extends RootSubPage {
 		//
 		form.add(new BooleanOption("enableCI", getString("gb.enableCI"), getString("gb.enableCIDescription"), new
 				PropertyModel<Boolean>(repositoryModel, "enableCI")));
-		List<String> availableCIs = new ArrayList<>();
+		List<String> availableCIs = new ArrayList<String>();
 		availableCIs.add("Jenkins");
 		form.add(new ChoiceOption<String>("CItype", getString("gb.CIType"), getString("gb.CITypeDescription"), new
 				PropertyModel<String>(repositoryModel, "CIType"), availableCIs));
 
-		IModel<String> ciURL = new Model<String>();
-		form.add(new TextOption("CIUrl", getString("gb.CIUrl"), getString("gb.CIUrlDescription"), "span6", ciURL));
+		form.add(new TextOption("CIUrl", getString("gb.CIUrl"), getString("gb.CIUrlDescription"), "span6", new
+				PropertyModel<String>(repositoryModel, "CIUrl")));
+		form.add(new TextOption("Jobname", getString("gb.Jobname"), getString("gb.JobnameDescription"), "span6", new
+				PropertyModel<String>(repositoryModel, "jobname")));
 
 		//
 		// FORM CONTROLS

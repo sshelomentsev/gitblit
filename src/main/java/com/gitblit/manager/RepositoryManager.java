@@ -942,6 +942,12 @@ public class RepositoryManager implements IRepositoryManager {
 			model.metricAuthorExclusions = new ArrayList<String>(Arrays.asList(config.getStringList(
 					Constants.CONFIG_GITBLIT, null, "metricAuthorExclusions")));
 
+			model.enableCI = getConfig(config, "enableCI", false);
+			model.CIType = getConfig(config, "CIType", "");
+			model.CIUrl = getConfig(config, "CIUrl", "");
+			model.jobname = getConfig(config, "Jobname", "");
+
+
 			// Custom defined properties
 			model.customFields = new LinkedHashMap<String, String>();
 			for (String aProperty : config.getNames(Constants.CONFIG_GITBLIT, Constants.CONFIG_CUSTOM_FIELDS)) {
@@ -1576,6 +1582,16 @@ public class RepositoryManager implements IRepositoryManager {
 				repository.federationStrategy.name());
 		config.setBoolean(Constants.CONFIG_GITBLIT, null, "isFederated", repository.isFederated);
 		config.setString(Constants.CONFIG_GITBLIT, null, "gcThreshold", repository.gcThreshold);
+
+		config.setBoolean(Constants.CONFIG_GITBLIT, null, "enableCI", repository.enableCI);
+		config.setString(Constants.CONFIG_GITBLIT, null, "CIType", repository.CIType);
+		config.setString(Constants.CONFIG_GITBLIT, null, "CIUrl", repository.CIUrl);
+		config.setString(Constants.CONFIG_GITBLIT, null, "Jobname", repository.jobname);
+
+		if (repository.enableCI && !repository.postReceiveScripts.contains("jenkins_verification")) {
+			repository.postReceiveScripts.add("jenkins_verification");
+		}
+
 		if (repository.gcPeriod == settings.getInteger(Keys.git.defaultGarbageCollectionPeriod, 7)) {
 			// use default from config
 			config.unset(Constants.CONFIG_GITBLIT, null, "gcPeriod");

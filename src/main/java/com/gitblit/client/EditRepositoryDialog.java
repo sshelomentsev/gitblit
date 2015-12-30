@@ -154,6 +154,14 @@ public class EditRepositoryDialog extends JDialog {
 
 	private List<JTextField> customTextfields;
 
+	private JCheckBox isEnabledCI;
+
+	private JComboBox CIType;
+
+	private JTextField CIUrl;
+
+	private JTextField Jobname;
+
 	public EditRepositoryDialog(int protocolVersion) {
 		this(protocolVersion, new RepositoryModel());
 		this.isCreate = true;
@@ -172,6 +180,7 @@ public class EditRepositoryDialog extends JDialog {
 		setTitle(Translation.get("gb.edit") + ": " + aRepository.name);
 		setIconImage(new ImageIcon(getClass()
 				.getResource("/gitblt-favicon.png")).getImage());
+		System.out.println("Repository dialog instantiations");
 	}
 
 	@Override
@@ -188,6 +197,7 @@ public class EditRepositoryDialog extends JDialog {
 	}
 
 	private void initialize(int protocolVersion, RepositoryModel anRepository) {
+		System.out.println("Repository dialog initialize");
 		nameField = new JTextField(anRepository.name == null ? ""
 				: anRepository.name, 35);
 		descriptionField = new JTextField(anRepository.description == null ? ""
@@ -410,6 +420,40 @@ public class EditRepositoryDialog extends JDialog {
 		customFieldsScrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
 		customFieldsScrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
 
+		System.out.println("enabled CI add");
+		isEnabledCI = new JCheckBox(Translation.get("gb.enableCI"), anRepository.enableCI);
+		fieldsPanel.add(isEnabledCI);
+		List<String> cis = new ArrayList<String>();
+		cis.add("Jenkins");
+		CIType = new JComboBox(cis.toArray());
+		CIType.setEditable(anRepository.enableCI);
+		CIType.setEnabled(anRepository.enableCI);
+		CIUrl = new JTextField(anRepository.CIUrl, 40);
+		CIUrl.setEditable(anRepository.enableCI);
+		CIUrl.setEnabled(anRepository.enableCI);
+		Jobname = new JTextField(anRepository.jobname, 40);
+		Jobname.setEditable(anRepository.enableCI);
+		Jobname.setEnabled(anRepository.enableCI);
+
+		isEnabledCI.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				boolean enabled = isEnabledCI.isSelected();
+				CIType.setEnabled(enabled);
+				CIUrl.setEnabled(enabled);
+				CIType.setEditable(enabled);
+				CIType.setEditable(enabled);
+				Jobname.setEditable(enabled);
+				Jobname.setEnabled(enabled);
+			}
+		});
+
+		fieldsPanel.add(isEnabledCI);
+		fieldsPanel.add(CIType);
+		fieldsPanel.add(newFieldPanel(Translation.get("gb.CIUrl"), CIUrl));
+		fieldsPanel.add(Jobname);
+
+
 		JTabbedPane panel = new JTabbedPane(JTabbedPane.TOP);
 		panel.addTab(Translation.get("gb.general"), fieldsPanel);
 		panel.addTab(Translation.get("gb.accessRestriction"), accessPanel);
@@ -424,7 +468,6 @@ public class EditRepositoryDialog extends JDialog {
 		panel.addTab(Translation.get("gb.postReceiveScripts"), postReceivePanel);
 
 		panel.addTab(Translation.get("gb.customFields"), customFieldsScrollPane);
-
 
 		setupAccessPermissions(anRepository.accessRestriction);
 
@@ -507,6 +550,7 @@ public class EditRepositoryDialog extends JDialog {
 	}
 
 	private boolean validateFields() {
+		System.out.println("validation");
 		String rname = nameField.getText();
 		if (StringUtils.isEmpty(rname)) {
 			error("Please enter a repository name!");
@@ -626,6 +670,22 @@ public class EditRepositoryDialog extends JDialog {
 		repository.indexedBranches = indexedBranchesPalette.getSelections();
 		repository.preReceiveScripts = preReceivePalette.getSelections();
 		repository.postReceiveScripts = postReceivePalette.getSelections();
+
+		repository.enableCI = isEnabledCI.isSelected();
+		System.out.println("is enabled CI = " + isEnabledCI.isSelected());
+		if (repository.enableCI) {
+			if (null == CIType.getSelectedItem()) {
+				error("Please select CI!");
+				return false;
+			}
+			repository.CIType = CIType.getSelectedItem().toString();
+			repository.CIUrl = CIUrl.getText();
+			System.out.println("type = " + CIType.getSelectedItem().toString());
+			System.out.println("url = " + CIUrl.getText());
+			if (!repository.postReceiveScripts.contains("jenkins_verification")) {
+				repository.postReceiveScripts.add("jenkins_verification");
+			}
+		}
 
 		// Custom Fields
 		repository.customFields = new LinkedHashMap<String, String>();
