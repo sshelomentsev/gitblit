@@ -961,6 +961,7 @@
 					<include name="fisheye.groovy" />
 					<include name="redmine-fetch.groovy" />
 					<include name="subgit.groovy" />
+					<include name="jenkins_verification.groovy" />
 				</fileset>
 			</copy>
 			<mkdir dir="@{toDir}/gitignore" />
