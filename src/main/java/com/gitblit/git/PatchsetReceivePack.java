@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.gitblit.transport.ssh.git.Receive;
+import com.gitblit.utils.*;
 import org.eclipse.jgit.lib.AnyObjectId;
 import org.eclipse.jgit.lib.BatchRefUpdate;
 import org.eclipse.jgit.lib.NullProgressMonitor;
@@ -66,14 +66,9 @@ import com.gitblit.tickets.BranchTicketService;
 import com.gitblit.tickets.ITicketService;
 import com.gitblit.tickets.TicketMilestone;
 import com.gitblit.tickets.TicketNotifier;
-import com.gitblit.utils.ArrayUtils;
-import com.gitblit.utils.DiffUtils;
 import com.gitblit.utils.DiffUtils.DiffStat;
-import com.gitblit.utils.JGitUtils;
 import com.gitblit.utils.JGitUtils.MergeResult;
 import com.gitblit.utils.JGitUtils.MergeStatus;
-import com.gitblit.utils.RefLogUtils;
-import com.gitblit.utils.StringUtils;
 import com.google.common.collect.Lists;
 
 
@@ -167,25 +162,6 @@ public class PatchsetReceivePack extends GitblitReceivePack {
 			return defaultBranch;
 		}
 		return branch;
-	}
-
-	/** Extracts the ticket id from the ref name */
-	private long getTicketId(String refName) {
-		if (refName.indexOf('%') > -1) {
-			refName = refName.substring(0, refName.indexOf('%'));
-		}
-		if (refName.startsWith(Constants.R_FOR)) {
-			String ref = refName.substring(Constants.R_FOR.length());
-			try {
-				return Long.parseLong(ref);
-			} catch (Exception e) {
-				// not a number
-			}
-		} else if (refName.startsWith(Constants.R_TICKET) ||
-				refName.startsWith(Constants.R_TICKETS_PATCHSETS)) {
-			return PatchsetCommand.getTicketNumber(refName);
-		}
-		return 0L;
 	}
 
 	/** Returns true if the ref namespace exists */
@@ -348,7 +324,7 @@ public class PatchsetReceivePack extends GitblitReceivePack {
 				final Matcher m = NEW_PATCHSET.matcher(cmd.getRefName());
 				if (m.matches()) {
 					// prohibit pushing directly to a patchset ref
-					long id = getTicketId(cmd.getRefName());
+					long id = RefNameUtils.getTicketId(cmd.getRefName());
 					sendError("You may not directly push directly to a patchset ref!");
 					sendError("Instead, please push to one the following:");
 					sendError(" - {0}{1,number,0}", Constants.R_FOR, id);
@@ -530,7 +506,7 @@ public class PatchsetReceivePack extends GitblitReceivePack {
 	 */
 	private PatchsetCommand preparePatchset(ReceiveCommand cmd) {
 		String branch = getIntegrationBranch(cmd.getRefName());
-		long number = getTicketId(cmd.getRefName());
+		long number = RefNameUtils.getTicketId(cmd.getRefName());
 
 		TicketModel ticket = null;
 		if (number > 0 && ticketService.hasTicket(repository, number)) {
@@ -1038,7 +1014,7 @@ public class PatchsetReceivePack extends GitblitReceivePack {
 		Set<Ref> refs = map.get(commit.getId());
 		if (!ArrayUtils.isEmpty(refs)) {
 			for (Ref ref : refs) {
-				long number = PatchsetCommand.getTicketNumber(ref.getName());
+				long number = RefNameUtils.getTicketNumber(ref.getName());
 				if (number > 0) {
 					return number;
 				}

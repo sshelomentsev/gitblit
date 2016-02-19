@@ -1,27 +1,49 @@
-import com.gitblit.GitBlit
-import com.gitblit.Keys
-import com.gitblit.models.RepositoryModel
-import com.gitblit.models.UserModel
-import com.gitblit.utils.JGitUtils
-import org.eclipse.jgit.lib.Repository
-import org.eclipse.jgit.revwalk.RevCommit
+import com.gitblit.utils.RefNameUtils
+import com.gitblit.utils.StringUtils
 import org.eclipse.jgit.transport.ReceiveCommand
-import org.eclipse.jgit.transport.ReceiveCommand.Result
-import org.slf4j.Logger
-import java.net.URLEncoder
+import com.gitblit.models.TicketModel
+
 logger.info("jenkins verification hook triggered by ${user.username} for ${repository.name}")
 
 if (repository.enableCI) {
-	def ref = ""
-	for (ReceiveCommand command : commands) {
-		ref = command.refName
-	}
 	def triggerUrl = repository.CIUrl + "/gitblit/notifyCommit?"
-	def params = "repository=${repository.name}&job=${repository.jobname}&branch=" + ref
-	//def enc = URLEncoder.encode(params)
-	def url = triggerUrl + params
-	logger.info(url)
-	
-	new URL(url).getContent()
-	//new URL(url).getContent() 
+
+	// there's only one ReceiveCommand for branch; even if there are many commits in branch
+	def refNames = new HashSet<String>()
+	for (ReceiveCommand command : commands) {
+		refNames.add(command.refName)
+	}
+
+	for (refName in refNames) {
+		def requestParams = [
+				repository: repository.name,
+				job: repository.jobname,
+				branch: refName
+		]
+
+		def ticketId = RefNameUtils.getTicketId(refName)
+		TicketModel ticket = gitblit.ticketService.getTicket(repository, ticketId)
+
+		if (ticket) {
+			requestParams << [ticketTitle: "${ticket.title}"]
+			requestParams << [ticketTopic: "${ticket.topic}"]
+			requestParams << [ticketType: "${ticket.type}"]
+			requestParams << [ticketPriority: "${ticket.priority}"]
+			requestParams << [user: "${ticket.updatedBy}"]
+		}
+
+		def requestParamsSb = new StringBuilder()
+		requestParams.entrySet().each {
+			requestParam -> requestParamsSb.append(requestParam.key)
+					.append('=')
+					.append(StringUtils.encodeURL(requestParam.value.toString()))
+					.append('&')
+		}
+		String paramsStr = requestParamsSb.toString()[0..-2] // remove last '&'
+
+		String url = triggerUrl + paramsStr
+		logger.info(url)
+
+		new URL(url).openConnection().getResponseCode()
+	} // next refName
 }

@@ -31,6 +31,7 @@ import java.util.TreeSet;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.gitblit.utils.*;
 import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
 import org.apache.wicket.MarkupContainer;
@@ -81,12 +82,7 @@ import com.gitblit.tickets.TicketIndexer.Lucene;
 import com.gitblit.tickets.TicketLabel;
 import com.gitblit.tickets.TicketMilestone;
 import com.gitblit.tickets.TicketResponsible;
-import com.gitblit.utils.ArrayUtils;
-import com.gitblit.utils.JGitUtils;
 import com.gitblit.utils.JGitUtils.MergeStatus;
-import com.gitblit.utils.MarkdownUtils;
-import com.gitblit.utils.StringUtils;
-import com.gitblit.utils.TimeUtils;
 import com.gitblit.wicket.GitBlitWebSession;
 import com.gitblit.wicket.TicketsUI;
 import com.gitblit.wicket.WicketUtils;
@@ -1613,7 +1609,7 @@ public class TicketPage extends RepositoryPage {
 			Map<String, Ref> refs = getRepository().getRefDatabase().getRefs(Constants.R_TICKETS_PATCHSETS);
 			for (Map.Entry<String, Ref> entry : refs.entrySet()) {
 				if (entry.getValue().getObjectId().equals(commit.getId())) {
-					long id = PatchsetCommand.getTicketNumber(entry.getKey());
+					long id = RefNameUtils.getTicketNumber(entry.getKey());
 					TicketModel ticket = app().tickets().getTicket(getRepositoryModel(), id);
 					return ticket;
 				}

@@ -84,26 +84,6 @@ public class PatchsetCommand extends ReceiveCommand {
 		return getBasePatchsetBranch(ticketId) + patchset;
 	}
 
-	public static long getTicketNumber(String ref) {
-		if (ref.startsWith(Constants.R_TICKETS_PATCHSETS)) {
-			// patchset revision
-
-			// strip changes ref
-			String p = ref.substring(Constants.R_TICKETS_PATCHSETS.length());
-			// strip shard id
-			p = p.substring(p.indexOf('/') + 1);
-			// strip revision
-			p = p.substring(0, p.indexOf('/'));
-			// parse ticket number
-			return Long.parseLong(p);
-		} else if (ref.startsWith(Constants.R_TICKET)) {
-			String p = ref.substring(Constants.R_TICKET.length());
-			// parse ticket number
-			return Long.parseLong(p);
-		}
-		return 0L;
-	}
-
 	public PatchsetCommand(String username, Patchset patchset) {
 		super(patchset.isFF() ? ObjectId.fromString(patchset.parent) : ObjectId.zeroId(),
 				ObjectId.fromString(patchset.tip), null);
