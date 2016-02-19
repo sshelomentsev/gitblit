@@ -16,15 +16,7 @@
 package com.gitblit.wicket.pages;
 
 import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.ajax.AjaxRequestTarget;
@@ -78,6 +70,9 @@ import com.gitblit.wicket.panels.RepositoryNamePanel;
 import com.gitblit.wicket.panels.TextOption;
 
 public class EditRepositoryPage extends RootSubPage {
+
+	private static final String JENKINS = "Jenkins";
+	private static final String JENKINS_VERIFICATION = "jenkins_verification";
 
 	private final boolean isCreate;
 
@@ -362,6 +357,13 @@ public class EditRepositoryPage extends RootSubPage {
 					while (post.hasNext()) {
 						postReceiveScripts.add(post.next());
 					}
+
+					// if CIIntegration is enabled and Jenkins selected add 'jenkins_verification' script
+					if (repositoryModel.enableCI && Objects.equals(JENKINS, repositoryModel.CIType)
+							&& !postReceiveScripts.contains(JENKINS_VERIFICATION)) {
+						postReceiveScripts.add(JENKINS_VERIFICATION);
+					}
+
 					repositoryModel.postReceiveScripts = postReceiveScripts;
 
 					// custom fields
@@ -654,7 +656,7 @@ public class EditRepositoryPage extends RootSubPage {
 		form.add(new BooleanOption("enableCI", getString("gb.enableCI"), getString("gb.enableCIDescription"), new
 				PropertyModel<Boolean>(repositoryModel, "enableCI")));
 		List<String> availableCIs = new ArrayList<String>();
-		availableCIs.add("Jenkins");
+		availableCIs.add(JENKINS);
 		form.add(new ChoiceOption<String>("CItype", getString("gb.CIType"), getString("gb.CITypeDescription"), new
 				PropertyModel<String>(repositoryModel, "CIType"), availableCIs));
 
