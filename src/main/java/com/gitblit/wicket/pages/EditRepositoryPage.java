@@ -220,22 +220,31 @@ public class EditRepositoryPage extends RootSubPage {
 				new ListModel<String>(federationSets), new CollectionModel<String>(sets),
 				new StringChoiceRenderer(), 8, false);
 
+		/* -------------- */
+		// pre-receive and post-receive scripts with hidden 'jenkins_verification' script
+
 		// pre-receive palette
 		if (!ArrayUtils.isEmpty(repositoryModel.preReceiveScripts)) {
 			preReceiveScripts.addAll(repositoryModel.preReceiveScripts);
+			preReceiveScripts.remove(JENKINS_VERIFICATION);
 		}
+
+		List<String> preReceiveScriptsUnused = app().repositories().getPreReceiveScriptsUnused(repositoryModel);
+		preReceiveScriptsUnused.remove(JENKINS_VERIFICATION);
 		final Palette<String> preReceivePalette = new Palette<String>("preReceiveScripts",
-				new ListModel<String>(preReceiveScripts), new CollectionModel<String>(app().repositories()
-						.getPreReceiveScriptsUnused(repositoryModel)),
+				new ListModel<String>(preReceiveScripts), new CollectionModel<String>(preReceiveScriptsUnused),
 				new StringChoiceRenderer(), 12, true);
 
 		// post-receive palette
 		if (!ArrayUtils.isEmpty(repositoryModel.postReceiveScripts)) {
 			postReceiveScripts.addAll(repositoryModel.postReceiveScripts);
+			postReceiveScripts.remove(JENKINS_VERIFICATION);
 		}
+
+		List<String> postReceiveScriptsUnused = app().repositories().getPostReceiveScriptsUnused(repositoryModel);
+		postReceiveScriptsUnused.remove(JENKINS_VERIFICATION);
 		final Palette<String> postReceivePalette = new Palette<String>("postReceiveScripts",
-				new ListModel<String>(postReceiveScripts), new CollectionModel<String>(app().repositories()
-						.getPostReceiveScriptsUnused(repositoryModel)),
+				new ListModel<String>(postReceiveScripts), new CollectionModel<String>(postReceiveScriptsUnused),
 				new StringChoiceRenderer(), 12, true);
 
 		// custom fields
@@ -358,13 +367,13 @@ public class EditRepositoryPage extends RootSubPage {
 						postReceiveScripts.add(post.next());
 					}
 
+					repositoryModel.postReceiveScripts = new ArrayList<String>(postReceiveScripts);
+
 					// if CIIntegration is enabled and Jenkins selected add 'jenkins_verification' script
 					if (repositoryModel.enableCI && Objects.equals(JENKINS, repositoryModel.CIType)
-							&& !postReceiveScripts.contains(JENKINS_VERIFICATION)) {
-						postReceiveScripts.add(JENKINS_VERIFICATION);
+							&& !repositoryModel.postReceiveScripts.contains(JENKINS_VERIFICATION)) {
+						repositoryModel.postReceiveScripts.add(JENKINS_VERIFICATION);
 					}
-
-					repositoryModel.postReceiveScripts = postReceiveScripts;
 
 					// custom fields
 					repositoryModel.customFields = new LinkedHashMap<String, String>();
