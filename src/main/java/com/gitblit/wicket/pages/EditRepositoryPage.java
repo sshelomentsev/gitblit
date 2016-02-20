@@ -242,7 +242,7 @@ public class EditRepositoryPage extends RootSubPage {
 		}
 
 		List<String> postReceiveScriptsUnused = app().repositories().getPostReceiveScriptsUnused(repositoryModel);
-		postReceiveScriptsUnused.remove(JENKINS_VERIFICATION);
+		if (postReceiveScriptsUnused != null) postReceiveScriptsUnused.remove(JENKINS_VERIFICATION);
 		final Palette<String> postReceivePalette = new Palette<String>("postReceiveScripts",
 				new ListModel<String>(postReceiveScripts), new CollectionModel<String>(postReceiveScriptsUnused),
 				new StringChoiceRenderer(), 12, true);
