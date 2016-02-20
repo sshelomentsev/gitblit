@@ -18,7 +18,8 @@ if (repository.enableCI) {
 		def requestParams = [
 				repository: repository.name,
 				job: repository.jobname,
-				branch: refName
+				branch: refName,
+				user : user
 		]
 
 		def ticketId = RefNameUtils.getTicketId(refName)
@@ -29,7 +30,6 @@ if (repository.enableCI) {
 			requestParams << [ticketTopic: "${ticket.topic}"]
 			requestParams << [ticketType: "${ticket.type}"]
 			requestParams << [ticketPriority: "${ticket.priority}"]
-			requestParams << [user: "${ticket.updatedBy}"]
 		}
 
 		def requestParamsSb = new StringBuilder()
