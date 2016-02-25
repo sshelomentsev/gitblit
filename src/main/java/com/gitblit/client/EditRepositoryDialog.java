@@ -162,6 +162,8 @@ public class EditRepositoryDialog extends JDialog {
 
 	private JTextField Jobname;
 
+	private JTextField JenkinsAuthToken;
+
 	public EditRepositoryDialog(int protocolVersion) {
 		this(protocolVersion, new RepositoryModel());
 		this.isCreate = true;
@@ -434,6 +436,9 @@ public class EditRepositoryDialog extends JDialog {
 		Jobname = new JTextField(anRepository.jobname, 40);
 		Jobname.setEditable(anRepository.enableCI);
 		Jobname.setEnabled(anRepository.enableCI);
+		JenkinsAuthToken = new JTextField(anRepository.jenkinsAuthToken, 40);
+		JenkinsAuthToken.setEditable(anRepository.enableCI);
+		JenkinsAuthToken.setEnabled(anRepository.enableCI);
 
 		isEnabledCI.addActionListener(new ActionListener() {
 			@Override

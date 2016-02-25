@@ -669,10 +669,14 @@ public class EditRepositoryPage extends RootSubPage {
 		form.add(new ChoiceOption<String>("CItype", getString("gb.CIType"), getString("gb.CITypeDescription"), new
 				PropertyModel<String>(repositoryModel, "CIType"), availableCIs));
 
+		//TODO disable these fields if CI is disabled
 		form.add(new TextOption("CIUrl", getString("gb.CIUrl"), getString("gb.CIUrlDescription"), "span6", new
 				PropertyModel<String>(repositoryModel, "CIUrl")));
 		form.add(new TextOption("Jobname", getString("gb.Jobname"), getString("gb.JobnameDescription"), "span6", new
 				PropertyModel<String>(repositoryModel, "jobname")));
+		form.add(new TextOption("JenkinsAuthToken", getString("gb.JenkinsAuthToken"),
+				getString("gb.JenkinsAuthTokenDescription"), "span6",
+				new PropertyModel<String>(repositoryModel, "jenkinsAuthToken")));
 
 		//
 		// FORM CONTROLS

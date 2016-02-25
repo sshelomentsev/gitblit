@@ -19,7 +19,8 @@ if (repository.enableCI) {
 				repository: repository.name,
 				job: repository.jobname,
 				branch: refName,
-				user : user
+				user : user,
+				authToken: repository.jenkinsAuthToken
 		]
 
 		def ticketId = RefNameUtils.getTicketId(refName)
