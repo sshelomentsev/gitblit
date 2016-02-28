@@ -15,7 +15,6 @@
  */
 package com.gitblit.utils;
 
-import static org.eclipse.jgit.lib.Constants.encode;
 import static org.eclipse.jgit.lib.Constants.encodeASCII;
 
 import java.io.IOException;
@@ -32,7 +31,6 @@ import org.apache.wicket.Localizer;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.diff.DiffFormatter;
-import org.eclipse.jgit.diff.RawText;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.RawParseUtils;
 
@@ -48,42 +46,42 @@ import com.gitblit.wicket.GitBlitWebApp;
  * @author Tom <tw201207@gmail.com>
  *
  */
-public class GitBlitDiffFormatter extends DiffFormatter {
+public abstract class GitBlitDiffFormatter extends DiffFormatter {
 
 	/** Regex pattern identifying trailing whitespace. */
-	private static final Pattern trailingWhitespace = Pattern.compile("(\\s+?)\r?\n?$");
+	protected static final Pattern trailingWhitespace = Pattern.compile("(\\s+?)\r?\n?$");
 
 	/**
 	 * gitblit.properties key for the per-file limit on the number of diff lines.
 	 */
-	private static final String DIFF_LIMIT_PER_FILE_KEY = "web.maxDiffLinesPerFile";
+	protected static final String DIFF_LIMIT_PER_FILE_KEY = "web.maxDiffLinesPerFile";
 
 	/**
 	 * gitblit.properties key for the global limit on the number of diff lines in a commitdiff.
 	 */
-	private static final String GLOBAL_DIFF_LIMIT_KEY = "web.maxDiffLines";
+	protected static final String GLOBAL_DIFF_LIMIT_KEY = "web.maxDiffLines";
 
 	/**
 	 * Diffs with more lines are not shown in commitdiffs. (Similar to what GitHub does.) Can be reduced
 	 * (but not increased) through gitblit.properties key {@link #DIFF_LIMIT_PER_FILE_KEY}.
 	 */
-	private static final int DIFF_LIMIT_PER_FILE = 4000;
+	protected static final int DIFF_LIMIT_PER_FILE = 4000;
 
 	/**
 	 * Global diff limit. Commitdiffs with more lines are truncated. Can be reduced (but not increased)
 	 * through gitblit.properties key {@link #GLOBAL_DIFF_LIMIT_KEY}.
 	 */
-	private static final int GLOBAL_DIFF_LIMIT = 20000;
+	protected static final int GLOBAL_DIFF_LIMIT = 20000;
 
-	private static final boolean CONVERT_TABS = true;
+	protected static final boolean CONVERT_TABS = true;
 
-	private final DiffOutputStream os;
+	protected final DiffOutputStream os;
 
-	private final DiffStat diffStat;
+	protected final DiffStat diffStat;
 
-	private PathChangeModel currentPath;
+	protected PathChangeModel currentPath;
 
-	private int left, right;
+	protected int left, right;
 
 	/**
 	 * If a single file diff in a commitdiff produces more than this number of lines, we don't display
@@ -95,40 +93,40 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 	 * single-file diffs.
 	 * </p>
 	 */
-	private final int maxDiffLinesPerFile;
+	protected final int maxDiffLinesPerFile;
 
 	/**
 	 * Global limit on the number of diff lines. Set to {@link #GLOBAL_DIFF_LIMIT} for commitdiffs, and
 	 * to -1 (switched off the limit) for single-file diffs.
 	 */
-	private final int globalDiffLimit;
+	protected final int globalDiffLimit;
 
 	/** Number of lines for the current file diff. Set to zero when a new DiffEntry is started. */
-	private int nofLinesCurrent;
+	protected int nofLinesCurrent;
 	/**
 	 * Position in the stream when we try to write the first line. Used to rewind when we detect that
 	 * the diff is too large.
 	 */
-	private int startCurrent;
+	protected int startCurrent;
 	/** Flag set to true when we rewind. Reset to false when we start a new DiffEntry. */
-	private boolean isOff;
+	protected boolean isOff;
 	/** The current diff entry. */
-	private DiffEntry entry;
+	protected DiffEntry entry;
 
 	// Global limit stuff.
 
 	/** Total number of lines written before the current diff entry. */
-	private int totalNofLinesPrevious;
+	protected int totalNofLinesPrevious;
 	/** Running total of the number of diff lines written. Updated until we exceed the global limit. */
-	private int totalNofLinesCurrent;
+	protected int totalNofLinesCurrent;
 	/** Stream position to reset to if we decided to truncate the commitdiff. */
-	private int truncateTo;
+	protected int truncateTo;
 	/** Whether we decided to truncate the commitdiff. */
-	private boolean truncated;
+	protected boolean truncated;
 	/** If {@link #truncated}, contains all entries skipped. */
-	private final List<DiffEntry> skipped = new ArrayList<DiffEntry>();
+	protected final List<DiffEntry> skipped = new ArrayList<DiffEntry>();
 
-	private int tabLength;
+	protected int tabLength;
 
 	/**
 	 * A {@link ResettableByteArrayOutputStream} that intercept the "Binary files differ" message produced
@@ -136,7 +134,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 	 * otherwise we'd just have re-implemented {@link GitBlitDiffFormatter#format(DiffEntry) format(DiffEntry)}
 	 * completely without ever calling the super implementation.
 	 */
-	private static class DiffOutputStream extends ResettableByteArrayOutputStream {
+	protected static class DiffOutputStream extends ResettableByteArrayOutputStream {
 
 		private static final String BINARY_DIFFERENCE = "Binary files differ\n";
 
@@ -213,7 +211,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 	 *            to use if no localization for the message can be found
 	 * @return the possibly localized message
 	 */
-	private String getMsg(String key, String defaultValue) {
+	protected String getMsg(String key, String defaultValue) {
 		if (Application.exists()) {
 			Localizer localizer = Application.get().getResourceSettings().getLocalizer();
 			if (localizer != null) {
@@ -277,7 +275,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 	/**
 	 * Rewind and issue a message that the diff is too large.
 	 */
-	private void reset() {
+	protected void reset() {
 		if (!isOff) {
 			os.resetTo(startCurrent);
 			writeFullWidthLine(getMsg("gb.diffFileDiffTooLarge", "Diff too large"));
@@ -290,7 +288,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 	 * Writes an initial table row containing information about added/removed/renamed/copied files. In case
 	 * of a deletion, we also suppress generating the diff; it's not interesting. (All lines removed.)
 	 */
-	private void handleChange() {
+	protected void handleChange() {
 		// XXX Would be nice if we could generate blob links for the cases handled here. Alas, we lack the repo
 		// name, and cannot reliably determine it here. We could get the .git directory of a Repository, if we
 		// passed in the repo, and then take the name of the parent directory, but that'd fail for repos nested
@@ -404,45 +402,6 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 		}
 	}
 
-	@Override
-	protected void writeLine(final char prefix, final RawText text, final int cur) throws IOException {
-		if (nofLinesCurrent++ == 0) {
-			handleChange();
-			startCurrent = os.size();
-		}
-		// update entry diffstat
-		currentPath.update(prefix);
-		if (isOff) {
-			return;
-		}
-		totalNofLinesCurrent++;
-		if (nofLinesCurrent > maxDiffLinesPerFile && maxDiffLinesPerFile > 0) {
-			reset();
-		} else {
-			// output diff
-			os.write("<tr>".getBytes());
-			switch (prefix) {
-			case '+':
-				os.write(("<th class='diff-line'></th><th class='diff-line' data-lineno='" + (right++) + "'></th>").getBytes());
-				os.write("<th class='diff-state diff-state-add'></th>".getBytes());
-				os.write("<td class='diff-cell add2'>".getBytes());
-				break;
-			case '-':
-				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line'></th>").getBytes());
-				os.write("<th class='diff-state diff-state-sub'></th>".getBytes());
-				os.write("<td class='diff-cell remove2'>".getBytes());
-				break;
-			default:
-				os.write(("<th class='diff-line' data-lineno='" + (left++) + "'></th><th class='diff-line' data-lineno='" + (right++) + "'></th>").getBytes());
-				os.write("<th class='diff-state'></th>".getBytes());
-				os.write("<td class='diff-cell context2'>".getBytes());
-				break;
-			}
-			os.write(encode(codeLineToHtml(prefix, text.getString(cur))));
-			os.write("</td></tr>\n".getBytes());
-		}
-	}
-
 	/**
 	 * Convert the given code line to HTML.
 	 *
@@ -452,7 +411,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 	 *            the line to format as HTML
 	 * @return the HTML-formatted line, safe for inserting as is into HTML.
 	 */
-	private String codeLineToHtml(final char prefix, final String line) {
+	protected String codeLineToHtml(final char prefix, final String line) {
 		if ((prefix == '+' || prefix == '-')) {
 			// Highlight trailing whitespace on deleted/added lines.
 			Matcher matcher = trailingWhitespace.matcher(line);
@@ -508,7 +467,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 		}
 		if (truncated) {
 			sb.append(MessageFormat.format("<div class='header'><div class='diffHeader'>{0}</div></div>",
-					StringUtils.escapeForHtml(getMsg("gb.diffTruncated", "Diff truncated after the above file"), false)));
+				StringUtils.escapeForHtml(getMsg("gb.diffTruncated", "Diff truncated after the above file"), false)));
 			// List all files not shown. We can be sure we do have at least one path in skipped.
 			sb.append("<div class='diff'><table cellpadding='0'><tbody><tr><td class='diff-cell' colspan='4'>");
 			String deletedSuffix = StringUtils.escapeForHtml(getMsg("gb.diffDeletedFileSkipped", "(deleted)"), false);
@@ -517,7 +476,7 @@ public class GitBlitDiffFormatter extends DiffFormatter {
 				if (!first) {
 					sb.append('\n');
 				}
-				if (ChangeType.DELETE.equals(entry.getChangeType())) {
+				if (DiffEntry.ChangeType.DELETE.equals(entry.getChangeType())) {
 					sb.append("<span id=\"n" + entry.getOldId().name() + "\">" + StringUtils.escapeForHtml(entry.getOldPath(), false) + ' ' + deletedSuffix + "</span>");
 				} else {
 					sb.append("<span id=\"n" + entry.getNewId().name() + "\">" + StringUtils.escapeForHtml(entry.getNewPath(), false) + "</span>");

@@ -9,7 +9,10 @@
 
 	<!-- commitdiff nav links -->	
 	<div class="page_nav2">
-		<wicket:message key="gb.parent"></wicket:message>: <span wicket:id="parentLink">[parent link]</span> | <a wicket:id="patchLink"><wicket:message key="gb.patch"></wicket:message></a> | <a wicket:id="commitLink"><wicket:message key="gb.commit"></wicket:message></a> | <a wicket:id="whitespaceLink"></a>
+		<wicket:message key="gb.parent"></wicket:message>: <span wicket:id="parentLink">[parent link]</span> | <a
+			wicket:id="patchLink"><wicket:message key="gb.patch"></wicket:message></a> | <a
+			wicket:id="commitLink"><wicket:message key="gb.commit"></wicket:message></a> | <a
+			wicket:id="whitespaceLink"></a> | <a wicket:id="viewerLink"></a>
 	</div>	
 	
 	<!-- commit header -->
@@ -28,7 +31,7 @@
 					<tr><td><span class="sha1" wicket:id="authorDate"></span></td></tr>
 				</table>
 				<!--  Note Author Gravatar -->
-				<span style="vertical-align: top;" wicket:id="noteAuthorAvatar" />				
+				<span style="vertical-align: top;" wicket:id="noteAuthorAvatar" />
 			</td>
 			<td class="message"><span class="sha1" wicket:id="noteContent"></span></td>
 		</tr>

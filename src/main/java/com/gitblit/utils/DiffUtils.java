@@ -53,8 +53,8 @@ public class DiffUtils {
 
 	/**
 	 * Callback interface for binary diffs. All the getDiff methods here take an optional handler;
-	 * if given and the {@link DiffOutputType} is {@link DiffOutputType#HTML HTML}, it is responsible
-	 * for displaying a binary diff.
+	 * if given and the {@link DiffOutputType} is {@link DiffOutputType#HTML_SPLIT HTML split} or
+	 * {@link DiffOutputType#HTML_UNIFIED HTML unified}., it is responsible for displaying a binary diff.
 	 */
 	public interface BinaryDiffHandler {
 
@@ -76,7 +76,15 @@ public class DiffUtils {
 	 * Enumeration for the diff output types.
 	 */
 	public static enum DiffOutputType {
-		PLAIN, HTML;
+		PLAIN, HTML_UNIFIED, HTML_SPLIT;
+
+		public DiffOutputType getOpposite() {
+			return this == HTML_UNIFIED ? HTML_SPLIT : HTML_UNIFIED;
+		}
+
+		public String getTranslationKey() {
+			return "gb." + name().toLowerCase();
+		}
 
 		public static DiffOutputType forName(String name) {
 			for (DiffOutputType type : values()) {
@@ -157,7 +165,7 @@ public class DiffUtils {
 		public final List<PathChangeModel> paths = new ArrayList<PathChangeModel>();
 
 		private final String commitId;
-		
+
 		private final Repository repository;
 
 		public DiffStat(String commitId, Repository repository) {
@@ -248,7 +256,8 @@ public class DiffUtils {
 	 * @param comparator
 	 * @param outputType
 	 * @param handler
-	 *            to use for rendering binary diffs if {@code outputType} is {@link DiffOutputType#HTML HTML}.
+	 *            to use for rendering binary diffs if {@code outputType} is
+	 *            {@link DiffOutputType#HTML_SPLIT HTML split} or {@link DiffOutputType#HTML_UNIFIED HTML unified}.
 	 *            May be {@code null}, resulting in the default behavior.
 	 * @param tabLength
 	 * @return the diff
@@ -286,7 +295,8 @@ public class DiffUtils {
 	 * @param comparator
 	 * @param outputType
 	 * @param handler
-	 *            to use for rendering binary diffs if {@code outputType} is {@link DiffOutputType#HTML HTML}.
+	 *            to use for rendering binary diffs if {@code outputType} is
+	 *            {@link DiffOutputType#HTML_SPLIT HTML split} or {@link DiffOutputType#HTML_UNIFIED HTML unified}.
 	 *            May be {@code null}, resulting in the default behavior.
 	 * @param tabLength
 	 * @return the diff
@@ -322,7 +332,8 @@ public class DiffUtils {
 	 * @param comparator
 	 * @param outputType
 	 * @param handler
-	 *            to use for rendering binary diffs if {@code outputType} is {@link DiffOutputType#HTML HTML}.
+	 *            to use for rendering binary diffs if {@code outputType} is
+	 *            {@link DiffOutputType#HTML_SPLIT HTML split} or {@link DiffOutputType#HTML_UNIFIED HTML unified}.
 	 *            May be {@code null}, resulting in the default behavior.
 	 * @param tabLength
 	 * @return the diff
@@ -367,7 +378,8 @@ public class DiffUtils {
 	 * @param comparator
 	 * @param outputType
 	 * @param handler
-	 *            to use for rendering binary diffs if {@code outputType} is {@link DiffOutputType#HTML HTML}.
+	 *            to use for rendering binary diffs if {@code outputType} is
+	 *            {@link DiffOutputType#HTML_SPLIT HTML split} or {@link DiffOutputType#HTML_UNIFIED HTML unified}.
 	 *            May be {@code null}, resulting in the default behavior.
 	 * @param tabLength
 	 * @return the diff
@@ -381,8 +393,11 @@ public class DiffUtils {
 
 			DiffFormatter df;
 			switch (outputType) {
-			case HTML:
-				df = new GitBlitDiffFormatter(commit.getName(), repository, path, handler, tabLength);
+			case HTML_UNIFIED:
+				df = new GitBlitUnifiedFormatter(commit.getName(), repository, path, handler, tabLength);
+				break;
+			case HTML_SPLIT:
+				df = new GitBlitSplitFormatter(commit.getName(), repository, path, handler, tabLength);
 				break;
 			case PLAIN:
 			default:

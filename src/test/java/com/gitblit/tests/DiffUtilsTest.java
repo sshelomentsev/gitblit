@@ -32,7 +32,8 @@ public class DiffUtilsTest extends GitblitUnitTest {
 	@Test
 	public void testDiffOutputTypes() throws Exception {
 		assertEquals(DiffOutputType.PLAIN, DiffOutputType.forName("plain"));
-		assertEquals(DiffOutputType.HTML, DiffOutputType.forName("html"));
+		assertEquals(DiffOutputType.HTML_SPLIT, DiffOutputType.forName("html_split"));
+		assertEquals(DiffOutputType.HTML_UNIFIED, DiffOutputType.forName("html_unified"));
 		assertEquals(null, DiffOutputType.forName(null));
 	}
 

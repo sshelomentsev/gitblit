@@ -121,7 +121,8 @@ public class ComparePage extends RepositoryPage {
 					fromCommit.getName(), toCommit.getName(), imageExtensions);
 			final DiffComparator diffComparator = WicketUtils.getDiffComparator(params);
 			final int tabLength = app().settings().getInteger(Keys.web.tabLength, 4);
-			final DiffOutput diff = DiffUtils.getDiff(r, fromCommit, toCommit, diffComparator, DiffOutputType.HTML, handler, tabLength);
+			final DiffOutput diff = DiffUtils.getDiff(r, fromCommit, toCommit, diffComparator, DiffOutputType.HTML_UNIFIED,
+													  handler, tabLength);
 			if (handler.getImgDiffCount() > 0) {
 				addBottomScript("scripts/imgdiff.js"); // Tiny support script for image diffs
 			}

@@ -26,6 +26,7 @@ import java.util.TimeZone;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.gitblit.utils.DiffUtils;
 import org.apache.wicket.Component;
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.Request;
@@ -356,6 +357,18 @@ public class WicketUtils {
 		return new PageParameters(parameterMap);
 	}
 
+	public static PageParameters newDiffOutputTypeParameters(String repositoryName,
+			String objectId, DiffUtils.DiffOutputType diffOutputType) {
+		Map<String, String> parameterMap = new HashMap<>();
+		if (StringUtils.isEmpty(objectId)) {
+			return newRepositoryParameter(repositoryName);
+		}
+		parameterMap.put("r", repositoryName);
+		parameterMap.put("h", objectId);
+		parameterMap.put("v", "" + diffOutputType.ordinal());
+		return new PageParameters(parameterMap);
+	}
+
 	public static PageParameters newRangeParameter(String repositoryName,
 			String startRange, String endRange) {
 		Map<String, String> parameterMap = new HashMap<String, String>();
@@ -523,6 +536,11 @@ public class WicketUtils {
 	public static DiffComparator getDiffComparator(PageParameters params) {
 		int ordinal = params.getInt("w", 0);
 		return DiffComparator.values()[ordinal];
+	}
+
+	public static DiffUtils.DiffOutputType getDiffOutputType(PageParameters params) {
+		int ordinal = params.getInt("v", 1);
+		return DiffUtils.DiffOutputType.values()[ordinal];
 	}
 
 	public static int getPage(PageParameters params) {

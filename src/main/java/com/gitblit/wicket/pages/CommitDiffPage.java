@@ -60,6 +60,7 @@ public class CommitDiffPage extends RepositoryPage {
 		final Repository r = getRepository();
 		final RevCommit commit = getCommit();
 		final DiffComparator diffComparator = WicketUtils.getDiffComparator(params);
+		final DiffOutputType diffOutputType = WicketUtils.getDiffOutputType(params);
 
 		List<String> parents = new ArrayList<String>();
 		if (commit.getParentCount() > 0) {
@@ -81,6 +82,9 @@ public class CommitDiffPage extends RepositoryPage {
 				WicketUtils.newObjectParameter(repositoryName, objectId)));
 		add(new LinkPanel("whitespaceLink", null, getString(diffComparator.getOpposite().getTranslationKey()),
 				CommitDiffPage.class, WicketUtils.newDiffParameter(repositoryName, objectId, diffComparator.getOpposite())));
+		add(new LinkPanel("viewerLink", null, getString(diffOutputType.getOpposite().getTranslationKey()),
+				CommitDiffPage.class, WicketUtils.newDiffOutputTypeParameters(repositoryName, objectId,
+				diffOutputType.getOpposite())));
 
 		add(new CommitHeaderPanel("commitHeader", repositoryName, commit));
 
@@ -88,7 +92,7 @@ public class CommitDiffPage extends RepositoryPage {
 		final ImageDiffHandler handler = new ImageDiffHandler(this, repositoryName,
 				parents.isEmpty() ? null : parents.get(0), commit.getName(), imageExtensions);
 		final int tabLength = app().settings().getInteger(Keys.web.tabLength, 4);
-		final DiffOutput diff = DiffUtils.getCommitDiff(r, commit, diffComparator, DiffOutputType.HTML, handler, tabLength);
+		final DiffOutput diff = DiffUtils.getCommitDiff(r, commit, diffComparator, diffOutputType, handler, tabLength);
 		if (handler.getImgDiffCount() > 0) {
 			addBottomScript("scripts/imgdiff.js"); // Tiny support script for image diffs
 		}
