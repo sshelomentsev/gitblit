@@ -1,3 +1,4 @@
+import com.gitblit.utils.JGitUtils
 import com.gitblit.utils.RefNameUtils
 import com.gitblit.utils.StringUtils
 import org.eclipse.jgit.transport.ReceiveCommand
@@ -9,18 +10,22 @@ if (repository.enableCI) {
 	def triggerUrl = repository.CIUrl + "/gitblit/notifyCommit?"
 
 	// there's only one ReceiveCommand for branch; even if there are many commits in branch
-	def refNames = new HashSet<String>()
+	def refNamesWithLastCommits = new HashMap<String, String>()
 	for (ReceiveCommand command : commands) {
-		refNames.add(command.refName)
+		refNamesWithLastCommits.put(command.refName,
+				JGitUtils.getCommit(receivePack.getRepository(), command.getNewId().getName()).name)
 	}
 
-	for (refName in refNames) {
+	for (refNameWithLastCommit in refNamesWithLastCommits) {
+		String refName = refNameWithLastCommit.key
+		String lastCommitSha1 = refNameWithLastCommit.value
 		def requestParams = [
 				repository: repository.name,
 				job: repository.jobname,
 				branch: refName,
 				user : user,
-				authToken: repository.jenkinsAuthToken
+				authToken: repository.jenkinsAuthToken,
+				lastCommit: lastCommitSha1
 		]
 
 		def ticketId = RefNameUtils.getTicketId(refName)

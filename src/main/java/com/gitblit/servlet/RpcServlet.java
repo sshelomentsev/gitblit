@@ -441,6 +441,12 @@ public class RpcServlet extends JsonServlet {
 				RepositoryModel model = gitblit.getRepositoryModel(repository);
 				TicketModel ticketModel = gitblit.getTicketService().getTicket(model, ticketId);
 				TicketModel.CIScore ciScore = TicketModel.CIScore.fromScore(score);
+
+				// add gitnote with build status to received commit sha1
+				String lastCommit = map.get("lastCommit");
+				boolean noteAdded = JGitUtils.addNote(gitblit.getRepository(repository), lastCommit,
+											  Constants.GIT_NOTE_BUILD_STATUS_PREFIX + ciScore.getValue());
+
 				TicketModel.CiVerification verification = new TicketModel.CiVerification(ciScore);
 				verification.jobUrl = jobUrl;
 				ticketModel.verification = verification;
@@ -457,6 +463,10 @@ public class RpcServlet extends JsonServlet {
 			Map<String, String> rsp = new HashMap<>();
 			rsp.put("url", gitblit.getTicketService().getTicketUrl(ticketModel));
 			result = rsp;
+		} else if (reqType == RpcRequest.VERIFY_USER_CAN_MANAGE) {
+			if (!allowManagement) {
+				response.sendError(forbiddenCode);
+			}
 		}
 
 		// send the result of the request

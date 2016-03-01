@@ -145,6 +145,8 @@ public class Constants {
 	
 	public static final String R_LFS = "info/lfs/";
 
+	public static final String GIT_NOTE_BUILD_STATUS_PREFIX = "CI build status: ";
+
 	public static String getVersion() {
 		String v = Constants.class.getPackage().getImplementationVersion();
 		if (v == null) {
@@ -401,7 +403,7 @@ public class Constants {
 		// administrator privileges and web.allowRpcManagement.
 		CLEAR_REPOSITORY_CACHE, REINDEX_TICKETS, GET_PROTOCOL, LIST_REPOSITORIES, LIST_BRANCHES, GET_USER,
 		FORK_REPOSITORY, LIST_SETTINGS,
-		UPDATE_TICKET_STATUS, TICKET_INFO,
+		UPDATE_TICKET_STATUS, TICKET_INFO, VERIFY_USER_CAN_MANAGE,
 		CREATE_REPOSITORY, EDIT_REPOSITORY, DELETE_REPOSITORY,
 		LIST_USERS, CREATE_USER, EDIT_USER, DELETE_USER,
 		LIST_TEAMS, CREATE_TEAM, EDIT_TEAM, DELETE_TEAM,

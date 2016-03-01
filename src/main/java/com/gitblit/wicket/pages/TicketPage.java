@@ -823,6 +823,20 @@ public class TicketPage extends RepositoryPage {
 					item.add(new Label("title", StringUtils.trimString(commit.getShortMessage(), Constants.LEN_SHORTLOG_REFS)));
 					item.add(WicketUtils.createDateLabel("commitDate", JGitUtils.getAuthorDate(commit), GitBlitWebSession
 							.get().getTimezone(), getTimeUtils(), false));
+
+					String buildStatus = null;
+					String note = JGitUtils.getNote(getRepository(), commit.getName());
+					if (note != null && note.startsWith(Constants.GIT_NOTE_BUILD_STATUS_PREFIX)) {
+						int score = Integer.parseInt(note.substring(Constants.GIT_NOTE_BUILD_STATUS_PREFIX.length()));
+						try {
+							buildStatus = getCIScoreDescription(CIScore.fromScore(score));
+						} catch (NumberFormatException ignore) {
+						}
+					}
+					if (buildStatus != null) {
+						//TODO show build status. It's better not to show this column if CI integration disabled.
+					}
+
 					item.add(new DiffStatPanel("commitDiffStat", 0, 0, true));
 				}
 			};

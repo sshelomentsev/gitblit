@@ -15,6 +15,7 @@
  */
 package com.gitblit.utils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.text.DecimalFormat;
@@ -61,6 +62,7 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.lib.TreeFormatter;
 import org.eclipse.jgit.merge.MergeStrategy;
 import org.eclipse.jgit.merge.RecursiveMerger;
+import org.eclipse.jgit.notes.Note;
 import org.eclipse.jgit.revwalk.RevBlob;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevObject;
@@ -2130,6 +2132,54 @@ public class JGitUtils {
 		DecimalFormat df = new DecimalFormat(intPattern);
 		result = createTag(repository, objectId, tagger, prefix + df.format((lastRev + 1)), message);
 		return result;
+	}
+
+	public static boolean addNote(Repository repository, String commitSha1, String note) {
+		try (RevWalk walk = new RevWalk(repository)) {
+			RevCommit commit = walk.parseCommit(ObjectId.fromString(commitSha1));
+
+			if (commit == null) {
+				// commit not found
+				return false;
+			}
+
+			try (Git git = new Git(repository)) {
+				git.notesAdd().setMessage(note).setObjectId(commit).call();
+			}
+			return true;
+		} catch (Exception e) {
+			LOGGER.warn("Exception occurred while adding a note", e);
+			return false;
+		}
+	}
+
+	public static String getNote(Repository repository, String commitSha1) {
+		try {
+			ObjectId commitId = ObjectId.fromString(commitSha1);
+			try (Git git = new Git(repository)) {
+				List<Note> call = git.notesList().call(); // uses default 'commits' note namespace
+				for (Note n : call) {
+					// check if we found the note for this commit
+					if (!n.getName().equals(commitId.getName())) {
+						continue;
+					}
+
+					// returning the contents of the note is done via a simple blob-read
+					ObjectLoader loader = repository.open(n.getData());
+					long size = loader.getSize();
+					if (size > 10 * 1024) {
+						throw new IOException("Note content is too big: " + size + " bytes");
+					}
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					loader.copyTo(baos);
+					return baos.toString();
+				}
+				return null; // no note found
+			}
+		} catch (Exception e) {
+			LOGGER.info("Exception occurred while reading git note", e);
+			return null;
+		}
 	}
 
 	/**
