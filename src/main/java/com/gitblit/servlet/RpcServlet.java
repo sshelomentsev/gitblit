@@ -445,11 +445,11 @@ public class RpcServlet extends JsonServlet {
 				// add gitnote with build status to received commit sha1
 				String lastCommit = map.get("lastCommit");
 				boolean noteAdded = JGitUtils.addNote(gitblit.getRepository(repository), lastCommit,
-											  Constants.GIT_NOTE_BUILD_STATUS_PREFIX + ciScore.getValue());
+						Constants.GIT_NOTE_BUILD_STATUS_PREFIX + ciScore.getValue() + Constants.GIT_NOTE_SEPARATOR +
+						Constants.GIT_NOTE_JOB_URL_PREFIX + jobUrl);
 
 				TicketModel.CiVerification verification = new TicketModel.CiVerification(ciScore);
 				verification.jobUrl = jobUrl;
-				ticketModel.verification = verification;
 				result = "ZBS";
 			} else {
 				response.sendError(notAllowedCode);

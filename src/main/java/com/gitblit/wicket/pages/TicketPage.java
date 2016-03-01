@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
@@ -43,6 +44,7 @@ import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.image.ContextImage;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.link.ExternalLink;
+import org.apache.wicket.markup.html.panel.EmptyPanel;
 import org.apache.wicket.markup.html.panel.Fragment;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
@@ -612,6 +614,24 @@ public class TicketPage extends RepositoryPage {
 			add(new Label("watchLink").setVisible(false));
 		}
 
+		// ticket build status - showed in 'discussion' and 'commits' tabs
+		String ciScoreDesc;
+		if (currentPatchset != null) {
+			String lastCommitNote = getNoteForCommit(JGitUtils.getCommit(getRepository(), currentPatchset.tip));
+			if (lastCommitNote != null) {
+				ciScoreDesc = extractBuildStatusFromNote(lastCommitNote);
+				if (ciScoreDesc == null) {
+					ciScoreDesc = getString("gb.CINotVerified");
+				}
+			}
+			else {
+				ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
+			}
+		} else {
+			ciScoreDesc = getString("gb.CINotVerified"); // not verified if there's no patchset
+		}
+		add(new Label("ticketBuildStatus", ciScoreDesc));
+
 
 		/*
 		 * TOPIC & LABELS (DISCUSSION TAB->SIDE BAR)
@@ -794,7 +814,7 @@ public class TicketPage extends RepositoryPage {
 
 			if (ticket.isOpen()) {
 				// current revision
-				MarkupContainer panel = createPatchsetPanel("panel", repository, user);
+				MarkupContainer panel = createPatchsetPanel("panel", repository, user, ciScoreDesc);
 				patchsetFrag.add(panel);
 				addUserAttributions(patchsetFrag, currentRevision, avatarWidth);
 				addUserAttributions(panel, currentRevision, 0);
@@ -823,20 +843,16 @@ public class TicketPage extends RepositoryPage {
 					item.add(new Label("title", StringUtils.trimString(commit.getShortMessage(), Constants.LEN_SHORTLOG_REFS)));
 					item.add(WicketUtils.createDateLabel("commitDate", JGitUtils.getAuthorDate(commit), GitBlitWebSession
 							.get().getTimezone(), getTimeUtils(), false));
-
-					String buildStatus = null;
-					String note = JGitUtils.getNote(getRepository(), commit.getName());
-					if (note != null && note.startsWith(Constants.GIT_NOTE_BUILD_STATUS_PREFIX)) {
-						int score = Integer.parseInt(note.substring(Constants.GIT_NOTE_BUILD_STATUS_PREFIX.length()));
-						try {
-							buildStatus = getCIScoreDescription(CIScore.fromScore(score));
-						} catch (NumberFormatException ignore) {
+					if (repository.enableCI && Constants.JENKINS.equalsIgnoreCase(repository.CIType)) {
+						String note = getNoteForCommit(commit);
+						if (note != null) {
+							String buildStatus = extractBuildStatusFromNote(note);
+							String buildUrl = extractBuildUrlFromNote(note);
+							item.add(new LinkPanel("buildStatus", "link", buildStatus, buildUrl));
+						} else {
+							item.add(new EmptyPanel("buildStatus"));
 						}
 					}
-					if (buildStatus != null) {
-						//TODO show build status. It's better not to show this column if CI integration disabled.
-					}
-
 					item.add(new DiffStatPanel("commitDiffStat", 0, 0, true));
 				}
 			};
@@ -1042,7 +1058,8 @@ public class TicketPage extends RepositoryPage {
 		return MarkdownUtils.transformMarkdown(md);
 	}
 
-	protected Fragment createPatchsetPanel(String wicketId, RepositoryModel repository, UserModel user) {
+	protected Fragment createPatchsetPanel(String wicketId, RepositoryModel repository, UserModel user, String
+			buildStatusDesc) {
 		final Patchset currentPatchset = ticket.getCurrentPatchset();
 		List<Patchset> patchsets = new ArrayList<Patchset>(ticket.getPatchsetRevisions(currentPatchset.number));
 		patchsets.remove(currentPatchset);
@@ -1083,11 +1100,7 @@ public class TicketPage extends RepositoryPage {
 
 
 		// CI approvals
-		CiVerification v = ticket.getCiApproval();
-		if (null == v) {
-			v = new CiVerification(CIScore.in_progress);
-		}
-		panel.add(new Label("approvals", v.toString()));
+		panel.add(new Label("approvals", MessageFormat.format(getString("gb.ticketBuildStatus"), buildStatusDesc)));
 		/*
 		List<Change> approvals = ticket.getCiApprovals(currentPatchset);
 		ListDataProvider<Change> approvalDp = new ListDataProvider<>(approvals);
@@ -1340,7 +1353,7 @@ public class TicketPage extends RepositoryPage {
 				description = getString("gb.CINotVerified");
 				break;
 		}
-		return String.format("%1$s (%2$+d)", description, score.getValue());
+		return String.format("%s", description);
 	}
 
 	protected String getScoreClass(Score score) {
@@ -1688,5 +1701,33 @@ public class TicketPage extends RepositoryPage {
 			copyFragment.add(img);
 			return copyFragment;
 		}
+	}
+
+	private String getNoteForCommit(RevCommit commit) {
+		return JGitUtils.getNote(getRepository(), commit.getName());
+	}
+
+	private String extractBuildStatusFromNote(String note) {
+		String[] noteParts = note.split(Constants.GIT_NOTE_SEPARATOR.replace("|","\\|"));
+		for (String notePart : noteParts) {
+			if (notePart.startsWith(Constants.GIT_NOTE_BUILD_STATUS_PREFIX)) {
+				try {
+					int score = Integer.parseInt(notePart.substring(Constants.GIT_NOTE_BUILD_STATUS_PREFIX.length()));
+					return getCIScoreDescription(CIScore.fromScore(score));
+				} catch (NumberFormatException | NoSuchElementException ignore) {
+				}
+			}
+		}
+		return null;
+	}
+
+	private String extractBuildUrlFromNote(String note) {
+		String[] noteParts = note.split(Constants.GIT_NOTE_SEPARATOR.replace("|","\\|"));
+		for (String notePart : noteParts) {
+			if (notePart.startsWith(Constants.GIT_NOTE_JOB_URL_PREFIX)) {
+				return notePart.substring(Constants.GIT_NOTE_JOB_URL_PREFIX.length());
+			}
+		}
+		return null;
 	}
 }

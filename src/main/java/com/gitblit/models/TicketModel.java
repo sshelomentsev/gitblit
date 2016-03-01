@@ -95,8 +95,6 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	
 	public Severity severity;
 
-	public CiVerification verification;
-	
 	/**
 	 * Builds an effective ticket from the collection of changes.  A change may
 	 * Add or Subtract information from a ticket, but the collection of changes
@@ -416,10 +414,6 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 			}
 		}
 		return new ArrayList<Change>(reviews.values());
-	}
-
-	public CiVerification getCiApproval() {
-		return this.verification;
 	}
 
 	/*

@@ -145,7 +145,11 @@ public class Constants {
 	
 	public static final String R_LFS = "info/lfs/";
 
+	public static final String JENKINS = "Jenkins";
+
 	public static final String GIT_NOTE_BUILD_STATUS_PREFIX = "CI build status: ";
+	public static final String GIT_NOTE_JOB_URL_PREFIX = "CI job URL: ";
+	public static final String GIT_NOTE_SEPARATOR = " | ";
 
 	public static String getVersion() {
 		String v = Constants.class.getPackage().getImplementationVersion();

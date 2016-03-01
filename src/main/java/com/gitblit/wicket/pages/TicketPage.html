@@ -74,6 +74,7 @@
 						<tr><th><wicket:message key="gb.milestone"></wicket:message></th><td><span wicket:id="milestone">[milestone]</span></td></tr>
 						<tr><th><wicket:message key="gb.votes"></wicket:message></th><td><span wicket:id="votes" class="badge">1</span> <a style="padding-left:5px" wicket:id="voteLink" href="#">vote</a></td></tr>
 						<tr><th><wicket:message key="gb.watchers"></wicket:message></th><td><span wicket:id="watchers" class="badge">1</span> <a style="padding-left:5px" wicket:id="watchLink" href="#">watch</a></td></tr>
+						<tr><th><wicket:message key="gb.buildStatus"></wicket:message></th><td><span wicket:id="ticketBuildStatus" class="badge">[ticket build status]</span></td></tr>
 						<tr><th><wicket:message key="gb.export"></wicket:message></th><td><a rel="nofollow" target="_blank" wicket:id="exportJson"></a></td></tr>
 						
 					</table>
@@ -335,6 +336,7 @@ pt push</pre>
 						<th ><wicket:message key="gb.commit"></wicket:message></th>						
 						<th colspan="2"><wicket:message key="gb.title"></wicket:message></th>		
 						<th style="text-align: right;"><wicket:message key="gb.date"></wicket:message></th>
+						<th style="text-align: right;"><wicket:message key="gb.buildStatus"></wicket:message></th>
 					</tr>
 				</thead>
 				<tbody>
@@ -343,7 +345,8 @@ pt push</pre>
 						<td><span class="shortsha1" wicket:id="commitId">[commit id]</span><span class="hidden-phone" style="padding-left: 20px;" wicket:id="diff">[diff]</span></td>						
 						<td><span class="attribution-text" wicket:id="title">[title]</span></td>
 						<td style="padding:8px 0px;text-align:right;"><span style="padding-right:40px;"><span wicket:id="commitDiffStat"></span></span></td>			
-						<td style="text-align:right;"><span class="attribution-date" wicket:id="commitDate">[commit date]</span></td>	
+						<td style="text-align:right;"><span class="attribution-date" wicket:id="commitDate">[commit date]</span></td>
+						<td style="text-align:right;"><span wicket:id="buildStatus">[build status]</span></td>
 					</tr>
 				</tbody>
 			</table>

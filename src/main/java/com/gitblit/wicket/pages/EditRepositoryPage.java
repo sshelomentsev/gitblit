@@ -71,7 +71,6 @@ import com.gitblit.wicket.panels.TextOption;
 
 public class EditRepositoryPage extends RootSubPage {
 
-	private static final String JENKINS = "Jenkins";
 	private static final String JENKINS_VERIFICATION = "jenkins_verification";
 
 	private final boolean isCreate;
@@ -370,7 +369,7 @@ public class EditRepositoryPage extends RootSubPage {
 					repositoryModel.postReceiveScripts = new ArrayList<String>(postReceiveScripts);
 
 					// if CIIntegration is enabled and Jenkins selected add 'jenkins_verification' script
-					if (repositoryModel.enableCI && Objects.equals(JENKINS, repositoryModel.CIType)
+					if (repositoryModel.enableCI && Objects.equals(Constants.JENKINS, repositoryModel.CIType)
 							&& !repositoryModel.postReceiveScripts.contains(JENKINS_VERIFICATION)) {
 						repositoryModel.postReceiveScripts.add(JENKINS_VERIFICATION);
 					}
@@ -665,7 +664,7 @@ public class EditRepositoryPage extends RootSubPage {
 		form.add(new BooleanOption("enableCI", getString("gb.enableCI"), getString("gb.enableCIDescription"), new
 				PropertyModel<Boolean>(repositoryModel, "enableCI")));
 		List<String> availableCIs = new ArrayList<String>();
-		availableCIs.add(JENKINS);
+		availableCIs.add(Constants.JENKINS);
 		form.add(new ChoiceOption<String>("CItype", getString("gb.CIType"), getString("gb.CITypeDescription"), new
 				PropertyModel<String>(repositoryModel, "CIType"), availableCIs));
 
