@@ -614,23 +614,33 @@ public class TicketPage extends RepositoryPage {
 			add(new Label("watchLink").setVisible(false));
 		}
 
+		// defining whether the CI integration is enabled. Only Jenkins is supported now
+		final boolean ciIntegrationEnabled = repository.enableCI &&
+				Constants.JENKINS.equalsIgnoreCase(repository.CIType);
+
 		// ticket build status - showed in 'discussion' and 'commits' tabs
 		String ciScoreDesc;
-		if (currentPatchset != null) {
-			String lastCommitNote = getNoteForCommit(JGitUtils.getCommit(getRepository(), currentPatchset.tip));
-			if (lastCommitNote != null) {
-				ciScoreDesc = extractBuildStatusFromNote(lastCommitNote);
-				if (ciScoreDesc == null) {
-					ciScoreDesc = getString("gb.CINotVerified");
+		if (ciIntegrationEnabled) {
+			if (currentPatchset != null) {
+				String lastCommitNote = getNoteForCommit(JGitUtils.getCommit(getRepository(), currentPatchset.tip));
+				if (lastCommitNote != null) {
+					ciScoreDesc = extractBuildStatusFromNote(lastCommitNote);
+					if (ciScoreDesc == null) {
+						ciScoreDesc = getString("gb.CINotVerified");
+					}
+				}
+				else {
+					ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
 				}
 			}
 			else {
-				ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
+				ciScoreDesc = getString("gb.CINotVerified"); // not verified if there's no patchset
 			}
+			add(new Label("ticketBuildStatus", ciScoreDesc));
 		} else {
-			ciScoreDesc = getString("gb.CINotVerified"); // not verified if there's no patchset
+			add(new EmptyPanel("ticketBuildStatus").setVisible(false));
+			ciScoreDesc = null;
 		}
-		add(new Label("ticketBuildStatus", ciScoreDesc));
 
 
 		/*
@@ -825,6 +835,15 @@ public class TicketPage extends RepositoryPage {
 			}
 
 			// commits
+
+			// build status column should be hidden if CI integration is disabled. Now only Jenkins is supported
+			if (ciIntegrationEnabled) {
+				patchsetFrag.add(new Label("buildStatusColumnHeader", getString("gb.buildStatus")));
+			} else {
+				patchsetFrag.add(new EmptyPanel("buildStatusColumnHeader").setVisible(false));
+			}
+
+
 			List<RevCommit> commits = JGitUtils.getRevLog(getRepository(), currentPatchset.base, currentPatchset.tip);
 			ListDataProvider<RevCommit> commitsDp = new ListDataProvider<RevCommit>(commits);
 			DataView<RevCommit> commitsView = new DataView<RevCommit>("commit", commitsDp) {
@@ -843,7 +862,7 @@ public class TicketPage extends RepositoryPage {
 					item.add(new Label("title", StringUtils.trimString(commit.getShortMessage(), Constants.LEN_SHORTLOG_REFS)));
 					item.add(WicketUtils.createDateLabel("commitDate", JGitUtils.getAuthorDate(commit), GitBlitWebSession
 							.get().getTimezone(), getTimeUtils(), false));
-					if (repository.enableCI && Constants.JENKINS.equalsIgnoreCase(repository.CIType)) {
+					if (ciIntegrationEnabled) {
 						String note = getNoteForCommit(commit);
 						if (note != null) {
 							String buildStatus = extractBuildStatusFromNote(note);
@@ -852,6 +871,8 @@ public class TicketPage extends RepositoryPage {
 						} else {
 							item.add(new EmptyPanel("buildStatus"));
 						}
+					} else {
+						item.add(new EmptyPanel("buildStatus").setVisible(false));
 					}
 					item.add(new DiffStatPanel("commitDiffStat", 0, 0, true));
 				}
@@ -1100,7 +1121,12 @@ public class TicketPage extends RepositoryPage {
 
 
 		// CI approvals
-		panel.add(new Label("approvals", MessageFormat.format(getString("gb.ticketBuildStatus"), buildStatusDesc)));
+		if (buildStatusDesc != null) {
+			panel.add(new Label("approvals", MessageFormat.format(getString("gb.ticketBuildStatus"), buildStatusDesc)));
+		} else {
+			panel.add(new EmptyPanel("approvals").setVisible(false));
+		}
+
 		/*
 		List<Change> approvals = ticket.getCiApprovals(currentPatchset);
 		ListDataProvider<Change> approvalDp = new ListDataProvider<>(approvals);
