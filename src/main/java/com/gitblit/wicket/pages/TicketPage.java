@@ -1127,9 +1127,9 @@ public class TicketPage extends RepositoryPage {
 
 		// CI approvals
 		if (buildStatusDesc != null) {
-			panel.add(new LinkPanel("approvals", null, MessageFormat.format(
-					getString("gb.ticketBuildStatus"), buildStatusDesc), ciBuildUrl));
+			panel.add(new LinkPanel("approvals", null, buildStatusDesc, ciBuildUrl));
 		} else {
+			// CI integration is disabled
 			panel.add(new EmptyPanel("approvals").setVisible(false));
 		}
 

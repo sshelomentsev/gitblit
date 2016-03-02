@@ -398,11 +398,13 @@ pt push</pre>
 	</div>
 
 	<wicket:enclosure child="approvals">
-		<div style="padding: 10px;color: #444;background:white;border-top:1px solid #ccc;">
-			<span style="font-weight:bold;padding-right:10px;">
-				<wicket:message key="gb.CIServerApprovals"></wicket:message>
-				<span wicket:id="approvals" style="padding-right: 10px;"></span>
+		<div style="padding: 10px;color: #444;background:white;border-top:1px solid #ccc;padding-right:10px;">
+			<span style="font-weight:bold;">
+				<wicket:message key="gb.CIServerApprovals" />
 			</span>
+			<br />
+			<wicket:message key="gb.ticketBuildStatus" />&nbsp;
+			<span wicket:id="approvals" style="padding-right: 10px;" />
 		</div>
 	</wicket:enclosure>
 
