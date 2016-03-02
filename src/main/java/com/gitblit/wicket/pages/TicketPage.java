@@ -620,26 +620,31 @@ public class TicketPage extends RepositoryPage {
 
 		// ticket build status - showed in 'discussion' and 'commits' tabs
 		String ciScoreDesc;
+		String ciBuildUrl;
 		if (ciIntegrationEnabled) {
 			if (currentPatchset != null) {
 				String lastCommitNote = getNoteForCommit(JGitUtils.getCommit(getRepository(), currentPatchset.tip));
 				if (lastCommitNote != null) {
 					ciScoreDesc = extractBuildStatusFromNote(lastCommitNote);
+					ciBuildUrl = extractBuildUrlFromNote(lastCommitNote); // may be null
 					if (ciScoreDesc == null) {
 						ciScoreDesc = getString("gb.CINotVerified");
 					}
 				}
 				else {
 					ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
+					ciBuildUrl = null;
 				}
 			}
 			else {
 				ciScoreDesc = getString("gb.CINotVerified"); // not verified if there's no patchset
+				ciBuildUrl = null;
 			}
-			add(new Label("ticketBuildStatus", ciScoreDesc));
+			add(new LinkPanel("ticketBuildStatus", null, ciScoreDesc, ciBuildUrl));
 		} else {
 			add(new EmptyPanel("ticketBuildStatus").setVisible(false));
 			ciScoreDesc = null;
+			ciBuildUrl = null;
 		}
 
 
@@ -824,7 +829,7 @@ public class TicketPage extends RepositoryPage {
 
 			if (ticket.isOpen()) {
 				// current revision
-				MarkupContainer panel = createPatchsetPanel("panel", repository, user, ciScoreDesc);
+				MarkupContainer panel = createPatchsetPanel("panel", repository, user, ciScoreDesc, ciBuildUrl);
 				patchsetFrag.add(panel);
 				addUserAttributions(patchsetFrag, currentRevision, avatarWidth);
 				addUserAttributions(panel, currentRevision, 0);
@@ -1079,8 +1084,8 @@ public class TicketPage extends RepositoryPage {
 		return MarkdownUtils.transformMarkdown(md);
 	}
 
-	protected Fragment createPatchsetPanel(String wicketId, RepositoryModel repository, UserModel user, String
-			buildStatusDesc) {
+	protected Fragment createPatchsetPanel(String wicketId, RepositoryModel repository, UserModel user,
+										   String buildStatusDesc, String ciBuildUrl) {
 		final Patchset currentPatchset = ticket.getCurrentPatchset();
 		List<Patchset> patchsets = new ArrayList<Patchset>(ticket.getPatchsetRevisions(currentPatchset.number));
 		patchsets.remove(currentPatchset);
@@ -1122,7 +1127,8 @@ public class TicketPage extends RepositoryPage {
 
 		// CI approvals
 		if (buildStatusDesc != null) {
-			panel.add(new Label("approvals", MessageFormat.format(getString("gb.ticketBuildStatus"), buildStatusDesc)));
+			panel.add(new LinkPanel("approvals", null, MessageFormat.format(
+					getString("gb.ticketBuildStatus"), buildStatusDesc), ciBuildUrl));
 		} else {
 			panel.add(new EmptyPanel("approvals").setVisible(false));
 		}
