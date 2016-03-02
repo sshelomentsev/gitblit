@@ -75,7 +75,7 @@
 						<tr><th><wicket:message key="gb.votes"></wicket:message></th><td><span wicket:id="votes" class="badge">1</span> <a style="padding-left:5px" wicket:id="voteLink" href="#">vote</a></td></tr>
 						<tr><th><wicket:message key="gb.watchers"></wicket:message></th><td><span wicket:id="watchers" class="badge">1</span> <a style="padding-left:5px" wicket:id="watchLink" href="#">watch</a></td></tr>
 						<wicket:enclosure child="ticketBuildStatus">
-							<tr><th><wicket:message key="gb.buildStatus"></wicket:message></th><td><span wicket:id="ticketBuildStatus">[ticket build status]</span></td></tr>
+							<tr><th><wicket:message key="gb.buildStatus"></wicket:message></th><td><i wicket:id="ticketBuildStatusIcon" /> <span wicket:id="ticketBuildStatus">[ticket build status]</span></td></tr>
 						</wicket:enclosure>
 						<tr><th><wicket:message key="gb.export"></wicket:message></th><td><a rel="nofollow" target="_blank" wicket:id="exportJson"></a></td></tr>
 						
@@ -351,7 +351,7 @@ pt push</pre>
 						<td style="padding:8px 0px;text-align:right;"><span style="padding-right:40px;"><span wicket:id="commitDiffStat"></span></span></td>
 						<td style="text-align:right;"><span class="attribution-date" wicket:id="commitDate">[commit date]</span></td>
 						<wicket:enclosure child="buildStatus">
-							<td style="text-align:right;"><span wicket:id="buildStatus">[build status]</span></td>
+							<td style="text-align:right;"> <i wicket:id="buildStatusIcon" /> <span wicket:id="buildStatus">[build status]</span></td>
 						</wicket:enclosure>
 					</tr>
 				</tbody>
@@ -403,7 +403,8 @@ pt push</pre>
 				<wicket:message key="gb.CIServerApprovals" />
 			</span>
 			<br />
-			<wicket:message key="gb.ticketBuildStatus" />&nbsp;
+			<wicket:message key="gb.ticketBuildStatus" />
+			<i wicket:id="approvalsIcon" />
 			<span wicket:id="approvals" style="padding-right: 10px;" />
 		</div>
 	</wicket:enclosure>
