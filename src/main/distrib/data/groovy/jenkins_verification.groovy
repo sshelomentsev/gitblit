@@ -16,6 +16,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider
 import org.apache.http.impl.client.CloseableHttpClient
 import org.apache.http.impl.client.HttpClientBuilder
 import org.apache.http.impl.client.HttpClients
+import org.apache.http.protocol.HttpContext
 import org.apache.http.util.EntityUtils
 import org.eclipse.jgit.transport.ReceiveCommand
 import com.gitblit.models.TicketModel
@@ -95,12 +96,12 @@ private int sendRequest(URI uri) {
 	CloseableHttpResponse response = null
 	try {
 		HttpGet request = new HttpGet(uri)
-		response = client.execute(host, request, localContext)
+		response = client.execute(host, request, (HttpContext)localContext)
 		int httpCode = response.statusLine.statusCode
 		logger.info("Response HTTP status code: ${httpCode}")
 		return httpCode
 	} finally {
-		EntityUtils.consumeQuietly(response.getEntity())
+		EntityUtils.consumeQuietly(response?.getEntity())
 		IOUtils.closeQuietly(client)
 	}
 }
