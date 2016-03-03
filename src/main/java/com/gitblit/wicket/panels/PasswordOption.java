@@ -25,6 +25,8 @@ public class PasswordOption extends BasePanel {
         add(new Label("name", title));
         add(new Label("description", description).setVisible(!StringUtils.isEmpty(description)));
         PasswordTextField tf = new PasswordTextField("text", model);
+        tf.setResetPassword(false);
+        tf.setRequired(false);
         if (!StringUtils.isEmpty(css)) {
             WicketUtils.setCssClass(tf, css);
         }
