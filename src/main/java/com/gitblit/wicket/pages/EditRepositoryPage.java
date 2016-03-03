@@ -18,6 +18,7 @@ package com.gitblit.wicket.pages;
 import java.text.MessageFormat;
 import java.util.*;
 
+import com.gitblit.wicket.panels.PasswordOption;
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.AjaxFormChoiceComponentUpdatingBehavior;
@@ -673,9 +674,12 @@ public class EditRepositoryPage extends RootSubPage {
 				PropertyModel<String>(repositoryModel, "CIUrl")));
 		form.add(new TextOption("Jobname", getString("gb.Jobname"), getString("gb.JobnameDescription"), "span6", new
 				PropertyModel<String>(repositoryModel, "jobname")));
-		form.add(new TextOption("JenkinsAuthToken", getString("gb.JenkinsAuthToken"),
-				getString("gb.JenkinsAuthTokenDescription"), "span6",
-				new PropertyModel<String>(repositoryModel, "jenkinsAuthToken")));
+		form.add(new TextOption("jenkinsUsername", getString("gb.jenkinsUsername"),
+								getString("gb.jenkinsUsernameDescription"), "span6",
+								new PropertyModel<String>(repositoryModel, "jenkinsUsername")));
+		form.add(new PasswordOption("jenkinsApiToken", getString("gb.jenkinsApiToken"),
+									getString("gb.jenkinsApiTokenDescription"), "span6",
+									new PropertyModel<String>(repositoryModel, "jenkinsApiToken")));
 
 		//
 		// FORM CONTROLS

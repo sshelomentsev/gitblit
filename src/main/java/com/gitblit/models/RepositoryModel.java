@@ -98,7 +98,8 @@ public class RepositoryModel implements Serializable, Comparable<RepositoryModel
 	public String CIType;
 	public String CIUrl;
 	public String jobname;
-	public String jenkinsAuthToken;
+	public String jenkinsUsername;
+	public String jenkinsApiToken;
 
 	public RepositoryModel() {
 		this("", "", "", new Date(0));

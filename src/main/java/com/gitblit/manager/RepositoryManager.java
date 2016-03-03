@@ -946,7 +946,8 @@ public class RepositoryManager implements IRepositoryManager {
 			model.CIType = getConfig(config, "CIType", "");
 			model.CIUrl = getConfig(config, "CIUrl", "");
 			model.jobname = getConfig(config, "Jobname", "");
-			model.jenkinsAuthToken = getConfig(config, "JenkinsAuthToken", "");
+			model.jenkinsUsername = getConfig(config, "jenkinsUsername", "");
+			model.jenkinsApiToken = getConfig(config, "jenkinsApiToken", "");
 
 
 			// Custom defined properties
@@ -1588,7 +1589,8 @@ public class RepositoryManager implements IRepositoryManager {
 		config.setString(Constants.CONFIG_GITBLIT, null, "CIType", repository.CIType);
 		config.setString(Constants.CONFIG_GITBLIT, null, "CIUrl", repository.CIUrl);
 		config.setString(Constants.CONFIG_GITBLIT, null, "Jobname", repository.jobname);
-		config.setString(Constants.CONFIG_GITBLIT, null, "JenkinsAuthToken", repository.jenkinsAuthToken);
+		config.setString(Constants.CONFIG_GITBLIT, null, "jenkinsUsername", repository.jenkinsUsername);
+		config.setString(Constants.CONFIG_GITBLIT, null, "jenkinsApiToken", repository.jenkinsApiToken);
 
 		if (repository.enableCI && !repository.postReceiveScripts.contains("jenkins_verification")) {
 			repository.postReceiveScripts.add("jenkins_verification");
