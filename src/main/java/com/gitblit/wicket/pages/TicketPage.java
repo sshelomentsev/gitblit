@@ -1377,7 +1377,7 @@ public class TicketPage extends RepositoryPage {
 			case failed:
 				return "fa fa-times-circle";
 			case in_progress:
-				return "fa fa-cogs";
+				return "fa fa-spinner";
 			case aborted:
 				return "fa fa-ban";
 			default:
