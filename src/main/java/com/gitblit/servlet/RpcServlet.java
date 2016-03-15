@@ -447,8 +447,6 @@ public class RpcServlet extends JsonServlet {
 						response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
 										   "Cannot process request due to internal server error");
 					} else {
-						TicketModel.CiVerification verification = new TicketModel.CiVerification(ciScore);
-						verification.jobUrl = jobUrl;
 						result = "ZBS";
 					}
 				} catch (NoSuchElementException | NumberFormatException ignore) {
