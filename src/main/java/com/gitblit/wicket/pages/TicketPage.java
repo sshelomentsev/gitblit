@@ -1502,11 +1502,11 @@ public class TicketPage extends RepositoryPage {
 			return new Label("mergePanel");
 		}
 
+		boolean ciBuildSuccessful = CIScore.success == ticket.getTicketCiBuildStatus();
 		boolean allowMerge;
 		if (repository.requireApproval) {
 			// rpeository requires approval
-			allowMerge = ticket.isOpen() && ticket.isApproved(patchset) &&
-					CIScore.success == ticket.getTicketCiBuildStatus(); // allow merge only if CI build is successful
+			allowMerge = ticket.isOpen() && ticket.isApproved(patchset) && ciBuildSuccessful;
 		} else {
 			// vetos are binding
 			allowMerge = ticket.isOpen() && !ticket.isVetoed(patchset);
@@ -1617,11 +1617,17 @@ public class TicketPage extends RepositoryPage {
 				Fragment mergePanel =  new Fragment("mergePanel", "vetoedFragment", this);
 				mergePanel.add(new Label("mergeTitle", MessageFormat.format(getString("gb.patchsetNotMergeable"), ticket.mergeTo)));
 				return mergePanel;
-			} else if (repository.requireApproval) {
+			} else if (repository.requireApproval && !ticket.isApproved(patchset)) {
 				// patchset has been not been approved for merge
 				Fragment mergePanel = new Fragment("mergePanel", "notApprovedFragment", this);
 				mergePanel.add(new Label("mergeTitle", MessageFormat.format(getString("gb.patchsetNotApproved"), ticket.mergeTo)));
 				mergePanel.add(new Label("mergeMore", MessageFormat.format(getString("gb.patchsetNotApprovedMore"), ticket.mergeTo)));
+				return mergePanel;
+			} else if (repository.requireApproval && !ciBuildSuccessful) {
+				// CI build status is not 'success'
+				Fragment mergePanel = new Fragment("mergePanel", "ciBuildNotSuccessfulFragment", this);
+				mergePanel.add(new Label("mergeTitle", getString("gb.ciBuildStatusIsNotSuccess")));
+				mergePanel.add(new Label("mergeMore", MessageFormat.format(getString("gb.ciBuildStatusIsNotSuccessMore"), ticket.mergeTo)));
 				return mergePanel;
 			} else {
 				// other case

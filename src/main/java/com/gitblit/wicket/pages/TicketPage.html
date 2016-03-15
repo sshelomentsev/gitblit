@@ -600,6 +600,17 @@ pt push</pre>
 </wicket:fragment>
 
 
+<!-- CI BUILD MUST BE SU -->
+<wicket:fragment wicket:id="ciBuildNotSuccessfulFragment">
+	<div class="alert alert-info submit-info" style="padding:4px;">
+		<div class="merge-panel" style="border: 1px solid rgba(0, 70, 200, 0.5);">
+			<h4><i class="fa fa-minus-circle"></i> <span wicket:id="mergeTitle"></span></h4>
+			<div wicket:id="mergeMore"></div>
+		</div>
+	</div>
+</wicket:fragment>
+
+
 <!-- Plain JavaScript manual copy & paste -->
 <wicket:fragment wicket:id="jsPanel">
   	<span style="vertical-align:baseline;">
