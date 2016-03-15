@@ -632,32 +632,32 @@ public class TicketPage extends RepositoryPage {
 		String ciBuildUrl;
 		String ciScoreCssClass;
 		if (ciIntegrationEnabled) {
-			if (currentPatchset != null) {
+			if (currentPatchset == null) {
+				// there's no patchset
+				ciScoreDesc = getString("gb.CINotVerified"); // not verified if there's no patchset
+				ciBuildUrl = null;
+				ciScoreCssClass = CSS_COG;
+			} else {
 				String lastCommitNote = getNoteForCommit(JGitUtils.getCommit(getRepository(), currentPatchset.tip));
-				if (lastCommitNote != null) {
-					CIScore ciScore = JenkinsGitNoteUtils.readCiBuildStatus(lastCommitNote);
-					if (ciScore != null) {
-						ciScoreDesc = getCIScoreDescription(ciScore);
-						ciScoreCssClass = getCIScoreClass(ciScore);
+				if (lastCommitNote == null) {
+					// there is no git note; assuming CI build is in progress
+					ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
+					ciBuildUrl = null;
+					ciScoreCssClass = CSS_SPINNER;
+				} else {
+					// have to read git note second time here
+					CIScore ticketCiBuildStatus = ticket.getTicketCiBuildStatus();
+					if (ticketCiBuildStatus != null) {
+						ciScoreDesc = getCIScoreDescription(ticketCiBuildStatus);
+						ciScoreCssClass = getCIScoreClass(ticketCiBuildStatus);
 					} else {
 						// cannot read CI build status from git note
 						ciScoreDesc = getString("gb.CINotVerified");
 						ciScoreCssClass = CSS_COG;
 					}
 					ciBuildUrl = JenkinsGitNoteUtils.readCiJobUrl(lastCommitNote); // may be null
-				} else {
-					// there is no git note; assuming CI build is in progress
-					ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
-					ciBuildUrl = null;
-					ciScoreCssClass = CSS_SPINNER;
 				}
-			} else {
-				// there's no patchset
-				ciScoreDesc = getString("gb.CINotVerified"); // not verified if there's no patchset
-				ciBuildUrl = null;
-				ciScoreCssClass = CSS_COG;
 			}
-
 			add(new LinkPanel("ticketBuildStatus", null, ciScoreDesc, ciBuildUrl));
 			EmptyPanel icon = new EmptyPanel("ticketBuildStatusIcon");
 			WicketUtils.addCssClass(icon, ciScoreCssClass);
@@ -1505,7 +1505,8 @@ public class TicketPage extends RepositoryPage {
 		boolean allowMerge;
 		if (repository.requireApproval) {
 			// rpeository requires approval
-			allowMerge = ticket.isOpen() && ticket.isApproved(patchset);
+			allowMerge = ticket.isOpen() && ticket.isApproved(patchset) &&
+					CIScore.success == ticket.getTicketCiBuildStatus(); // allow merge only if CI build is successful
 		} else {
 			// vetos are binding
 			allowMerge = ticket.isOpen() && !ticket.isVetoed(patchset);
