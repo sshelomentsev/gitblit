@@ -41,6 +41,11 @@ import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
+import com.gitblit.manager.IRepositoryManager;
+import com.gitblit.utils.JGitUtils;
+import com.gitblit.wicket.GitBlitWebApp;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.util.RelativeDateFormatter;
 
 /**
@@ -594,6 +599,27 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	@Override
 	public int hashCode() {
 		return (repository + number).hashCode();
+	}
+
+	/**
+	 * Return the CI build status of this ticket. It's the same that the build status of the last commit.
+     */
+	public CIScore getTicketCiBuildStatus() {
+		Patchset currentPatchset = getCurrentPatchset();
+		if (currentPatchset == null) {
+			return null;
+		}
+		IRepositoryManager repositoryManager = GitBlitWebApp.get().repositories();
+		Repository repository = repositoryManager.getRepository(this.repository);
+		if (repository == null) {
+			// should not really happen; but just in case it's the protection
+			return null;
+		}
+		String note = JGitUtils.getNote(repository, currentPatchset.tip);
+		if (note == null) {
+			return null;
+		}
+		return JenkinsGitNoteUtils.readCiBuildStatus(note);
 	}
 
 	/**
