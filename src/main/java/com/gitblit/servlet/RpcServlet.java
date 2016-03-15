@@ -22,7 +22,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
+import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
 import com.gitblit.models.TicketModel;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -105,15 +107,11 @@ public class RpcServlet extends JsonServlet {
 			if (StringUtils.isEmpty(gitblitUrl)) {
 				gitblitUrl = HttpUtils.getGitblitURL(request);
 			}
-			StringBuilder sb = new StringBuilder();
-			sb.append(gitblitUrl);
-			sb.append(Constants.R_PATH);
-			sb.append("{0}");
-			String cloneUrl = sb.toString();
+			String cloneUrl = gitblitUrl + Constants.R_PATH + "{0}";
 
 			// list repositories
 			List<RepositoryModel> list = gitblit.getRepositoryModels(user);
-			Map<String, RepositoryModel> repositories = new HashMap<String, RepositoryModel>();
+			Map<String, RepositoryModel> repositories = new HashMap<>();
 			for (RepositoryModel model : list) {
 				String url = MessageFormat.format(cloneUrl, model.name);
 				repositories.put(url, model);
@@ -121,7 +119,7 @@ public class RpcServlet extends JsonServlet {
 			result = repositories;
 		} else if (RpcRequest.LIST_BRANCHES.equals(reqType)) {
 			// list all local branches in all repositories accessible to user
-			Map<String, List<String>> localBranches = new HashMap<String, List<String>>();
+			Map<String, List<String>> localBranches = new HashMap<>();
 			List<RepositoryModel> models = gitblit.getRepositoryModels(user);
 			for (RepositoryModel model : models) {
 				if (!model.hasCommits) {
@@ -142,7 +140,7 @@ public class RpcServlet extends JsonServlet {
 					refs.addAll(JGitUtils.getRemoteBranches(repository, false, -1));
 				}
 				if (refs.size() > 0) {
-					List<String> branches = new ArrayList<String>();
+					List<String> branches = new ArrayList<>();
 					for (RefModel ref : refs) {
 						branches.add(ref.getName());
 					}
@@ -161,7 +159,7 @@ public class RpcServlet extends JsonServlet {
 					result = requestedUser;
 				}
 			} else {
-				if (user.canAdmin() || objectName.equals(user.username)) {
+				if (user != null && (user.canAdmin() || objectName.equals(user.username))) {
 					// return the specified user
 					UserModel requestedUser = gitblit.getUserModel(objectName);
 					if (requestedUser == null) {
@@ -176,7 +174,7 @@ public class RpcServlet extends JsonServlet {
 		} else if (RpcRequest.LIST_USERS.equals(reqType)) {
 			// list users
 			List<String> names = gitblit.getAllUsernames();
-			List<UserModel> users = new ArrayList<UserModel>();
+			List<UserModel> users = new ArrayList<>();
 			for (String name : names) {
 				users.add(gitblit.getUserModel(name));
 			}
@@ -184,7 +182,7 @@ public class RpcServlet extends JsonServlet {
 		} else if (RpcRequest.LIST_TEAMS.equals(reqType)) {
 			// list teams
 			List<String> names = gitblit.getAllTeamNames();
-			List<TeamModel> teams = new ArrayList<TeamModel>();
+			List<TeamModel> teams = new ArrayList<>();
 			for (String name : names) {
 				teams.add(gitblit.getTeamModel(name));
 			}
@@ -369,7 +367,7 @@ public class RpcServlet extends JsonServlet {
 				result = serverSettings;
 			} else {
 				// anonymous users get a few settings to allow browser launching
-				List<String> keys = new ArrayList<String>();
+				List<String> keys = new ArrayList<>();
 				keys.add(Keys.web.siteName);
 				keys.add(Keys.web.mountParameters);
 				keys.add(Keys.web.syndicationEntries);
@@ -434,23 +432,30 @@ public class RpcServlet extends JsonServlet {
 				}
 
 				String repository = map.get("repository");
-				long ticketId = Long.valueOf(map.get("ticketId"));
-				int score = Integer.valueOf(map.get("result"));
 				String jobUrl = map.get("jobUrl");
-
-				RepositoryModel model = gitblit.getRepositoryModel(repository);
-				TicketModel ticketModel = gitblit.getTicketService().getTicket(model, ticketId);
-				TicketModel.CIScore ciScore = TicketModel.CIScore.fromScore(score);
-
-				// add gitnote with build status to received commit sha1
 				String lastCommit = map.get("lastCommit");
-				boolean noteAdded = JGitUtils.addNote(gitblit.getRepository(repository), lastCommit,
-						Constants.GIT_NOTE_BUILD_STATUS_PREFIX + ciScore.getValue() + Constants.GIT_NOTE_SEPARATOR +
-						Constants.GIT_NOTE_JOB_URL_PREFIX + jobUrl);
+				try {
+					TicketModel.CIScore ciScore = TicketModel.CIScore.fromScore(Integer.valueOf(map.get("result")));
 
-				TicketModel.CiVerification verification = new TicketModel.CiVerification(ciScore);
-				verification.jobUrl = jobUrl;
-				result = "ZBS";
+					// add git note with build status to received commit sha1
+					String note = JenkinsGitNoteUtils.createNoteBuilder()
+							.addCiBuildStatus(ciScore)
+							.addCiJobUrl(jobUrl)
+							.build();
+					boolean noteAdded = JGitUtils.addNote(gitblit.getRepository(repository), lastCommit, note);
+					if (!noteAdded) {
+						response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+										   "Cannot process request due to internal server error");
+					} else {
+						TicketModel.CiVerification verification = new TicketModel.CiVerification(ciScore);
+						verification.jobUrl = jobUrl;
+						result = "ZBS";
+					}
+				} catch (NoSuchElementException | NumberFormatException ignore) {
+					// cannot convert given 'result' to CIScore
+					response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+									   "Cannot process 'result' parameter: " + map.get("result"));
+				}
 			} else {
 				response.sendError(notAllowedCode);
 			}
