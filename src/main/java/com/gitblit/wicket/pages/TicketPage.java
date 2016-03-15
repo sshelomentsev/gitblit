@@ -32,6 +32,7 @@ import java.util.TreeSet;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
 import com.gitblit.utils.*;
 import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
@@ -103,13 +104,20 @@ import com.gitblit.wicket.panels.SimpleAjaxLink;
  *
  */
 public class TicketPage extends RepositoryPage {
-
 	static final String NIL = "<nil>";
-
 	static final String ESC_NIL = StringUtils.escapeForHtml(NIL,  false);
 
-	final int avatarWidth = 40;
+	private static final String CSS_CHECK_CIRCLE = "fa fa-check-circle";
+	private static final String CSS_EXCLAMATION_CIRCLE = "fa fa-exclamation-circle";
+	private static final String CSS_TIMES_CIRCLE = "fa fa-times-circle";
+	private static final String CSS_SPINNER = "fa fa-spinner";
+	private static final String CSS_BAN = "fa fa-ban";
+	private static final String CSS_COG = "fa fa-cog";
+	private static final String CSS_THUMBS_O_DOWN = "fa fa-thumbs-o-down";
+	private static final String CSS_THUMBS_O_UP = "fa fa-thumbs-o-up";
+	private static final String CSS_MINUS_CIRCLE = "fa fa-minus-circle";
 
+	final int avatarWidth = 40;
 	final TicketModel ticket;
 
 	public TicketPage(PageParameters params) {
@@ -625,37 +633,27 @@ public class TicketPage extends RepositoryPage {
 			if (currentPatchset != null) {
 				String lastCommitNote = getNoteForCommit(JGitUtils.getCommit(getRepository(), currentPatchset.tip));
 				if (lastCommitNote != null) {
-					Integer ciScoreIntValue = extractCiScoreValueFromNote(lastCommitNote);
-					if (ciScoreIntValue != null) {
-						try {
-							CIScore ciScore = CIScore.fromScore(ciScoreIntValue);
-							ciScoreDesc = getCIScoreDescription(ciScore);
-							ciScoreCssClass = getCIScoreClass(ciScore);
-						} catch (NoSuchElementException ignore) {
-							ciScoreDesc = getString("gb.CINotVerified");
-							ciScoreCssClass = null;
-						}
+					CIScore ciScore = JenkinsGitNoteUtils.readCiBuildStatus(lastCommitNote);
+					if (ciScore != null) {
+						ciScoreDesc = getCIScoreDescription(ciScore);
+						ciScoreCssClass = getCIScoreClass(ciScore);
 					} else {
+						// cannot read CI build status from git note
 						ciScoreDesc = getString("gb.CINotVerified");
-						ciScoreCssClass = null;
+						ciScoreCssClass = CSS_COG;
 					}
-					ciBuildUrl = extractBuildUrlFromNote(lastCommitNote); // may be null
-				}
-				else {
+					ciBuildUrl = JenkinsGitNoteUtils.readCiJobUrl(lastCommitNote); // may be null
+				} else {
+					// there is no git note; assuming CI build is in progress
 					ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
 					ciBuildUrl = null;
-					ciScoreCssClass = null;
+					ciScoreCssClass = CSS_SPINNER;
 				}
-			}
-			else {
+			} else {
+				// there's no patchset
 				ciScoreDesc = getString("gb.CINotVerified"); // not verified if there's no patchset
 				ciBuildUrl = null;
-				ciScoreCssClass = null;
-			}
-
-			if (ciScoreCssClass == null) {
-				// default icon
-				ciScoreCssClass = "fa fa-circle-o";
+				ciScoreCssClass = CSS_COG;
 			}
 
 			add(new LinkPanel("ticketBuildStatus", null, ciScoreDesc, ciBuildUrl));
@@ -895,21 +893,17 @@ public class TicketPage extends RepositoryPage {
 					if (ciIntegrationEnabled) {
 						String note = getNoteForCommit(commit);
 						if (note != null) {
-							Integer ciScoreIntValue = extractCiScoreValueFromNote(note);
-							if (ciScoreIntValue != null) {
-								try {
-									CIScore ciScore = CIScore.fromScore(ciScoreIntValue);
-									String buildStatusDesc = getCIScoreDescription(ciScore);
-									String buildUrl = extractBuildUrlFromNote(note);
-									item.add(new LinkPanel("buildStatus", "link", buildStatusDesc, buildUrl));
+							CIScore ciScore = JenkinsGitNoteUtils.readCiBuildStatus(note);
+							if (ciScore != null) {
+								String buildStatusDesc = getCIScoreDescription(ciScore);
+								String buildUrl = JenkinsGitNoteUtils.readCiJobUrl(note);
+								item.add(new LinkPanel("buildStatus", "link", buildStatusDesc, buildUrl));
 
-									String ciScoreCssClass = getCIScoreClass(ciScore);
-									buildStatusIcon = new EmptyPanel("buildStatusIcon");
-									WicketUtils.addCssClass(buildStatusIcon, ciScoreCssClass);
-								} catch (NoSuchElementException e) {
-									item.add(new EmptyPanel("buildStatus"));
-								}
+								String ciScoreCssClass = getCIScoreClass(ciScore);
+								buildStatusIcon = new EmptyPanel("buildStatusIcon");
+								WicketUtils.addCssClass(buildStatusIcon, ciScoreCssClass);
 							} else {
+								// cannot read CI build status from git note on this commit
 								item.add(new EmptyPanel("buildStatus"));
 							}
 						} else {
@@ -1371,17 +1365,19 @@ public class TicketPage extends RepositoryPage {
 	protected String getCIScoreClass(CIScore score) {
 		switch (score) {
 			case success:
-				return "fa fa-check-circle";
+				return CSS_CHECK_CIRCLE;
 			case unstable:
-				return "fa fa-exclamation-circle";
+				return CSS_EXCLAMATION_CIRCLE;
 			case failed:
-				return "fa fa-times-circle";
+				return CSS_TIMES_CIRCLE;
 			case in_progress:
-				return "fa fa-spinner";
+				return CSS_SPINNER;
 			case aborted:
-				return "fa fa-ban";
+				return CSS_BAN;
 			default:
-				return "fa fa-circle-o";
+				// can happen if CIScore model is updated with new enum elements but this method isn't changed.
+				// it'd broke the entire page so can't throw an exception here.
+				return CSS_COG;
 		}
 	}
 
@@ -1413,16 +1409,16 @@ public class TicketPage extends RepositoryPage {
 	protected String getScoreClass(Score score) {
 		switch (score) {
 		case vetoed:
-			return "fa fa-exclamation-circle";
+			return CSS_EXCLAMATION_CIRCLE;
 		case needs_improvement:
-			return "fa fa-thumbs-o-down";
+			return CSS_THUMBS_O_DOWN;
 		case looks_good:
-			return "fa fa-thumbs-o-up";
+			return CSS_THUMBS_O_UP;
 		case approved:
-			return "fa fa-check-circle";
+			return CSS_CHECK_CIRCLE;
 		case not_reviewed:
 		default:
-			return "fa fa-minus-circle";
+			return CSS_MINUS_CIRCLE;
 		}
 	}
 
@@ -1570,7 +1566,7 @@ public class TicketPage extends RepositoryPage {
 								GitBlitWebSession.get().cacheErrorMessage(msg);
 								logger.error(msg);
 							}
-							
+
 							redirectTo(TicketsPage.class, getPageParameters());
 						}
 					};
@@ -1759,28 +1755,5 @@ public class TicketPage extends RepositoryPage {
 
 	private String getNoteForCommit(RevCommit commit) {
 		return JGitUtils.getNote(getRepository(), commit.getName());
-	}
-
-	private Integer extractCiScoreValueFromNote(String note) {
-		String[] noteParts = note.split(Constants.GIT_NOTE_SEPARATOR.replace("|","\\|"));
-		for (String notePart : noteParts) {
-			if (notePart.startsWith(Constants.GIT_NOTE_BUILD_STATUS_PREFIX)) {
-				try {
-					return Integer.parseInt(notePart.substring(Constants.GIT_NOTE_BUILD_STATUS_PREFIX.length()));
-				} catch (NumberFormatException ignore) {
-				}
-			}
-		}
-		return null;
-	}
-
-	private String extractBuildUrlFromNote(String note) {
-		String[] noteParts = note.split(Constants.GIT_NOTE_SEPARATOR.replace("|","\\|"));
-		for (String notePart : noteParts) {
-			if (notePart.startsWith(Constants.GIT_NOTE_JOB_URL_PREFIX)) {
-				return notePart.substring(Constants.GIT_NOTE_JOB_URL_PREFIX.length());
-			}
-		}
-		return null;
 	}
 }
