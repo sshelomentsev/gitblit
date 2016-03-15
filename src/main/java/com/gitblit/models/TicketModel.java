@@ -50,49 +50,28 @@ import org.eclipse.jgit.util.RelativeDateFormatter;
  *
  */
 public class TicketModel implements Serializable, Comparable<TicketModel> {
-
 	private static final long serialVersionUID = 1L;
 
 	public String project;
-
 	public String repository;
-
 	public long number;
-
 	public Date created;
-
 	public String createdBy;
-
 	public Date updated;
-
 	public String updatedBy;
-
 	public String title;
-
 	public String body;
-
 	public String topic;
-
 	public Type type;
-
 	public Status status;
-
 	public String responsible;
-
 	public String milestone;
-
 	public String mergeSha;
-
 	public String mergeTo;
-
 	public List<Change> changes;
-
 	public Integer insertions;
-
 	public Integer deletions;
-
 	public Priority priority;
-	
 	public Severity severity;
 
 	/**
@@ -294,8 +273,6 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		}
 		return Collections.emptyList();
 	}
-
-
 
 	public Attachment getAttachment(String name) {
 		Attachment attachment = null;
@@ -620,6 +597,154 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	}
 
 	/**
+	 * Returns true if the string is null or empty.
+	 *
+	 * @param value
+	 * @return true if string is null or empty
+	 */
+	static boolean isEmpty(String value) {
+		return value == null || value.trim().length() == 0;
+	}
+
+	/**
+	 * Returns true if the collection is null or empty
+	 *
+	 * @param collection
+	 * @return
+	 */
+	static boolean isEmpty(Collection<?> collection) {
+		return collection == null || collection.size() == 0;
+	}
+
+	/**
+	 * Returns true if the map is null or empty
+	 *
+	 * @param map
+	 * @return
+	 */
+	static boolean isEmpty(Map<?, ?> map) {
+		return map == null || map.size() == 0;
+	}
+
+	/**
+	 * Calculates the SHA1 of the string.
+	 *
+	 * @param text
+	 * @return sha1 of the string
+	 */
+	static String getSHA1(String text) {
+		try {
+			byte[] bytes = text.getBytes("iso-8859-1");
+			return getSHA1(bytes);
+		} catch (UnsupportedEncodingException u) {
+			throw new RuntimeException(u);
+		}
+	}
+
+	/**
+	 * Calculates the SHA1 of the byte array.
+	 *
+	 * @param bytes
+	 * @return sha1 of the byte array
+	 */
+	static String getSHA1(byte[] bytes) {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			md.update(bytes, 0, bytes.length);
+			byte[] digest = md.digest();
+			return toHex(digest);
+		} catch (NoSuchAlgorithmException t) {
+			throw new RuntimeException(t);
+		}
+	}
+
+	/**
+	 * Returns the hex representation of the byte array.
+	 *
+	 * @param bytes
+	 * @return byte array as hex string
+	 */
+	static String toHex(byte[] bytes) {
+		StringBuilder sb = new StringBuilder(bytes.length * 2);
+		for (int i = 0; i < bytes.length; i++) {
+			if ((bytes[i] & 0xff) < 0x10) {
+				sb.append('0');
+			}
+			sb.append(Long.toString(bytes[i] & 0xff, 16));
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Join the list of strings into a single string with a space separator.
+	 *
+	 * @param values
+	 * @return joined list
+	 */
+	static String join(Collection<String> values) {
+		return join(values, " ");
+	}
+
+	/**
+	 * Join the list of strings into a single string with the specified
+	 * separator.
+	 *
+	 * @param values
+	 * @param separator
+	 * @return joined list
+	 */
+	static String join(String[]  values, String separator) {
+		return join(Arrays.asList(values), separator);
+	}
+
+	/**
+	 * Join the list of strings into a single string with the specified
+	 * separator.
+	 *
+	 * @param values
+	 * @param separator
+	 * @return joined list
+	 */
+	static String join(Collection<String> values, String separator) {
+		StringBuilder sb = new StringBuilder();
+		for (String value : values) {
+			sb.append(value).append(separator);
+		}
+		if (sb.length() > 0) {
+			// truncate trailing separator
+			sb.setLength(sb.length() - separator.length());
+		}
+		return sb.toString().trim();
+	}
+
+
+	/**
+	 * Produce a deep copy of the given object. Serializes the entire object to
+	 * a byte array in memory. Recommended for relatively small objects.
+	 */
+	@SuppressWarnings("unchecked")
+	static <T> T copy(T original) {
+		T o = null;
+		try {
+			ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+			ObjectOutputStream oos = new ObjectOutputStream(byteOut);
+			oos.writeObject(original);
+			ByteArrayInputStream byteIn = new ByteArrayInputStream(byteOut.toByteArray());
+			ObjectInputStream ois = new ObjectInputStream(byteIn);
+			try {
+				o = (T) ois.readObject();
+			} catch (ClassNotFoundException cex) {
+				// actually can not happen in this instance
+			}
+		} catch (IOException iox) {
+			// doesn't seem likely to happen as these streams are in memory
+			throw new RuntimeException(iox);
+		}
+		return o;
+	}
+
+
+	/**
 	 * Encapsulates a ticket change
 	 */
 	public static class Change implements Serializable, Comparable<Change> {
@@ -906,153 +1031,6 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		}
 	}
 
-	/**
-	 * Returns true if the string is null or empty.
-	 *
-	 * @param value
-	 * @return true if string is null or empty
-	 */
-	static boolean isEmpty(String value) {
-		return value == null || value.trim().length() == 0;
-	}
-
-	/**
-	 * Returns true if the collection is null or empty
-	 *
-	 * @param collection
-	 * @return
-	 */
-	static boolean isEmpty(Collection<?> collection) {
-		return collection == null || collection.size() == 0;
-	}
-
-	/**
-	 * Returns true if the map is null or empty
-	 *
-	 * @param map
-	 * @return
-	 */
-	static boolean isEmpty(Map<?, ?> map) {
-		return map == null || map.size() == 0;
-	}
-
-	/**
-	 * Calculates the SHA1 of the string.
-	 *
-	 * @param text
-	 * @return sha1 of the string
-	 */
-	static String getSHA1(String text) {
-		try {
-			byte[] bytes = text.getBytes("iso-8859-1");
-			return getSHA1(bytes);
-		} catch (UnsupportedEncodingException u) {
-			throw new RuntimeException(u);
-		}
-	}
-
-	/**
-	 * Calculates the SHA1 of the byte array.
-	 *
-	 * @param bytes
-	 * @return sha1 of the byte array
-	 */
-	static String getSHA1(byte[] bytes) {
-		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-1");
-			md.update(bytes, 0, bytes.length);
-			byte[] digest = md.digest();
-			return toHex(digest);
-		} catch (NoSuchAlgorithmException t) {
-			throw new RuntimeException(t);
-		}
-	}
-
-	/**
-	 * Returns the hex representation of the byte array.
-	 *
-	 * @param bytes
-	 * @return byte array as hex string
-	 */
-	static String toHex(byte[] bytes) {
-		StringBuilder sb = new StringBuilder(bytes.length * 2);
-		for (int i = 0; i < bytes.length; i++) {
-			if ((bytes[i] & 0xff) < 0x10) {
-				sb.append('0');
-			}
-			sb.append(Long.toString(bytes[i] & 0xff, 16));
-		}
-		return sb.toString();
-	}
-
-	/**
-	 * Join the list of strings into a single string with a space separator.
-	 *
-	 * @param values
-	 * @return joined list
-	 */
-	static String join(Collection<String> values) {
-		return join(values, " ");
-	}
-
-	/**
-	 * Join the list of strings into a single string with the specified
-	 * separator.
-	 *
-	 * @param values
-	 * @param separator
-	 * @return joined list
-	 */
-	static String join(String[]  values, String separator) {
-		return join(Arrays.asList(values), separator);
-	}
-
-	/**
-	 * Join the list of strings into a single string with the specified
-	 * separator.
-	 *
-	 * @param values
-	 * @param separator
-	 * @return joined list
-	 */
-	static String join(Collection<String> values, String separator) {
-		StringBuilder sb = new StringBuilder();
-		for (String value : values) {
-			sb.append(value).append(separator);
-		}
-		if (sb.length() > 0) {
-			// truncate trailing separator
-			sb.setLength(sb.length() - separator.length());
-		}
-		return sb.toString().trim();
-	}
-
-
-	/**
-	 * Produce a deep copy of the given object. Serializes the entire object to
-	 * a byte array in memory. Recommended for relatively small objects.
-	 */
-	@SuppressWarnings("unchecked")
-	static <T> T copy(T original) {
-		T o = null;
-		try {
-			ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
-			ObjectOutputStream oos = new ObjectOutputStream(byteOut);
-			oos.writeObject(original);
-			ByteArrayInputStream byteIn = new ByteArrayInputStream(byteOut.toByteArray());
-			ObjectInputStream ois = new ObjectInputStream(byteIn);
-			try {
-				o = (T) ois.readObject();
-			} catch (ClassNotFoundException cex) {
-				// actually can not happen in this instance
-			}
-		} catch (IOException iox) {
-			// doesn't seem likely to happen as these streams are in memory
-			throw new RuntimeException(iox);
-		}
-		return o;
-	}
-
 	public static class Patchset implements Serializable, Comparable<Patchset> {
 
 		private static final long serialVersionUID = 1L;
@@ -1229,7 +1207,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 
 	}
 
-	public static enum Score {
+	public enum Score {
 		approved(2), looks_good(1), not_reviewed(0), needs_improvement(-1), vetoed(
 				-2);
 
@@ -1258,7 +1236,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		}
 	}
 
-	public static enum CIScore {
+	public enum CIScore {
 		success(0), unstable(1), failed(2), in_progress(3), aborted(4);
 
 		final int value;
@@ -1288,12 +1266,12 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 
 	}
 
-	public static enum Field {
+	public enum Field {
 		title, body, responsible, type, status, milestone, mergeSha, mergeTo,
 		topic, labels, watchers, reviewers, voters, mentions, priority, severity;
 	}
 
-	public static enum Type {
+	public enum Type {
 		Enhancement, Task, Bug, Proposal, Question, Maintenance;
 
 		public static Type defaultType = Task;
@@ -1332,7 +1310,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		}
 	}
 
-	public static enum Status {
+	public enum Status {
 		New, Open, Closed, Resolved, Fixed, Merged, Wontfix, Declined, Duplicate, Invalid, Abandoned, On_Hold, No_Change_Required;
 
 		public static Status [] requestWorkflow = { Open, Resolved, Declined, Duplicate, Invalid, Abandoned, On_Hold, No_Change_Required };
@@ -1377,11 +1355,11 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		}
 	}
 
-	public static enum CommentSource {
+	public enum CommentSource {
 		Comment, Email
 	}
 
-	public static enum PatchsetType {
+	public enum PatchsetType {
 		Proposal, FastForward, Rebase, Squash, Rebase_Squash, Amend;
 
 		public boolean isRewrite() {
@@ -1418,7 +1396,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		}
 	}
 
-	public static enum Priority {
+	public enum Priority {
 		Low(-1), Normal(0), High(1), Urgent(2);
 
 		public static Priority defaultPriority = Normal;
@@ -1470,7 +1448,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		}
 	}
 	
-	public static enum Severity {
+	public enum Severity {
 		Unrated(-1), Negligible(1), Minor(2), Serious(3), Critical(4), Catastrophic(5);
 
 		public static Severity defaultSeverity = Unrated;
