@@ -17,7 +17,7 @@ public final class JenkinsGitNoteUtils {
 
     private JenkinsGitNoteUtils() { }
 
-    public static GitNoteBuilder createBuilder() {
+    public static GitNoteBuilder createNoteBuilder() {
         return new GitNoteBuilder();
     }
 
