@@ -119,6 +119,11 @@ public class TicketPage extends RepositoryPage {
 	private static final String CSS_THUMBS_O_UP = "fa fa-thumbs-o-up";
 	private static final String CSS_MINUS_CIRCLE = "fa fa-minus-circle";
 
+	private static final String CSS_COLOR_RED = "color-red";
+	private static final String CSS_COLOR_GREEN = "color-green";
+	private static final String CSS_COLOR_GREY = "color-grey";
+	private static final String CSS_COLOR_YELLOW = "color-yellow";
+
 	final int avatarWidth = 40;
 	final TicketModel ticket;
 
@@ -1367,19 +1372,19 @@ public class TicketPage extends RepositoryPage {
 	protected String getCIScoreClass(CIScore score) {
 		switch (score) {
 			case success:
-				return CSS_CHECK_CIRCLE;
+				return CSS_CHECK_CIRCLE + ' ' + CSS_COLOR_GREEN;
 			case unstable:
-				return CSS_EXCLAMATION_CIRCLE;
+				return CSS_EXCLAMATION_CIRCLE + ' ' + CSS_COLOR_YELLOW;
 			case failed:
-				return CSS_TIMES_CIRCLE;
+				return CSS_TIMES_CIRCLE + ' ' + CSS_COLOR_RED;
 			case in_progress:
-				return CSS_SPINNER;
+				return CSS_SPINNER + ' ' + CSS_COLOR_GREY;
 			case aborted:
-				return CSS_BAN;
+				return CSS_BAN + ' ' + CSS_COLOR_GREY;
 			default:
 				// can happen if CIScore model is updated with new enum elements but this method isn't changed.
 				// it'd broke the entire page so can't throw an exception here.
-				return CSS_COG;
+				return CSS_COG + ' ' + CSS_COLOR_GREY;
 		}
 	}
 

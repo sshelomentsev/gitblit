@@ -2354,3 +2354,19 @@ div.markdown table.text th, div.markdown table.text td {
 .file-negative {
 	color:#D51900;
 }
+
+.color-red {
+	color: #ff0000;
+}
+
+.color-green {
+	color: #00BB00;
+}
+
+.color-grey {
+	color: #777777;
+}
+
+.color-yellow {
+	color: #ffcc22;
+}
