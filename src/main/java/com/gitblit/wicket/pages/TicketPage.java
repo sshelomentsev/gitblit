@@ -1858,7 +1858,7 @@ public class TicketPage extends RepositoryPage {
 		@Override
 		public void renderHead(IHeaderResponse response) {
 			super.renderHead(response);
-			response.renderOnLoadJavascript("wicketAjaxUrlPost(\"" + getCallbackUrl() + "\")");
+			response.renderOnLoadJavascript("wicketAjaxPost(\"" + getCallbackUrl() + "\")");
 		}
 
 		@Override
