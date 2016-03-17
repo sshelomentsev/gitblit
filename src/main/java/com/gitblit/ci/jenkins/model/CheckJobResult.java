@@ -6,11 +6,5 @@ package com.gitblit.ci.jenkins.model;
  * @author Yaroslav Pankratyev
  */
 public enum CheckJobResult {
-    Ok(200), Forbidden(403), NotFound(404);
-
-    CheckJobResult(int value) {
-        this.value = value;
-    }
-
-    private final int value;
+    Ok, Forbidden, NotFound
 }
