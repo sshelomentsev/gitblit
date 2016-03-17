@@ -98,7 +98,7 @@ public final class JenkinsHttpGate implements AutoCloseable
 
         CloseableHttpResponse response = null;
         try {
-            response = client.execute(method);
+            response = client.execute(method, localContext);
             int httpCode = response.getStatusLine().getStatusCode();
             if (HttpStatus.SC_OK == httpCode) {
                 try {
