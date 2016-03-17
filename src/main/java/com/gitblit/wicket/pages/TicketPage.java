@@ -65,6 +65,7 @@ import org.apache.wicket.Component;
 import org.apache.wicket.MarkupContainer;
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.RestartResponseException;
+import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.behavior.SimpleAttributeModifier;
 import org.apache.wicket.markup.html.basic.Label;
@@ -98,6 +99,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
 
 /**
  * The ticket page handles viewing and updating a ticket.
@@ -123,6 +125,8 @@ public class TicketPage extends RepositoryPage {
 	private static final String CSS_COLOR_GREEN = "color-green";
 	private static final String CSS_COLOR_GREY = "color-grey";
 	private static final String CSS_COLOR_YELLOW = "color-yellow";
+
+	private static final int DAYS_TO_UPDATE_COMMIT_STATUSES = 10;
 
 	final int avatarWidth = 40;
 	final TicketModel ticket;
@@ -931,6 +935,11 @@ public class TicketPage extends RepositoryPage {
 			};
 			patchsetFrag.add(commitsView);
 			add(patchsetFrag);
+
+			CommitStatusUpdateAjaxBehavior ajaxBehavior = new CommitStatusUpdateAjaxBehavior(commits, commitsView);
+			add(ajaxBehavior);
+			//TODO also add javascript script to page here
+			System.out.println("ajax behavior added; callback url: " + ajaxBehavior.getCallbackUrl()); //TODO remove
 		}
 
 
@@ -1779,5 +1788,51 @@ public class TicketPage extends RepositoryPage {
 
 	private String getNoteForCommit(RevCommit commit) {
 		return JGitUtils.getNote(getRepository(), commit.getName());
+	}
+
+	private synchronized void updateCommitStatuses(List<RevCommit> commits, DataView<RevCommit> commitsView) {
+		synchronized (TicketPage.class) {
+			List<RevCommit> commitsToCheckBuildStatus = new ArrayList<>();
+			for (RevCommit commit : commits) {
+				if (commitIsTooOld(commit)) {
+					// commits should be sorted by date from latest to earliest
+					break;
+				}
+				if (StringUtils.isEmpty(getNoteForCommit(commit))) {
+					commitsToCheckBuildStatus.add(commit);
+				}
+			}
+			logger.info("Updating " + commitsToCheckBuildStatus.size() + " commit statuses");
+			//TODO do HTTP request to Jenkins and update commit statuses here
+			JGitUtils.addNote(getRepository(), commitsToCheckBuildStatus.get(0).getName(), "Test note added in updateCommitStatuses()"); //TODO remove
+		}
+	}
+
+	private static boolean commitIsTooOld(RevCommit commit) {
+		long secondsDiff = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - commit.getCommitTime();
+		return TimeUnit.SECONDS.toDays(secondsDiff) > DAYS_TO_UPDATE_COMMIT_STATUSES;
+	}
+
+	private class CommitStatusUpdateAjaxBehavior extends AbstractDefaultAjaxBehavior {
+		private final List<RevCommit> commits;
+		private final DataView<RevCommit> commitsView;
+
+		private CommitStatusUpdateAjaxBehavior(List<RevCommit> commits, DataView<RevCommit> commitsView) {
+			this.commits = commits;
+			this.commitsView = commitsView;
+		}
+
+		@Override
+		public void onConfigure(Component component) {
+			commitsView.setOutputMarkupId(true);
+			commitsView.getParent().setOutputMarkupId(true);
+		}
+
+		@Override
+		protected void respond(AjaxRequestTarget target) {
+			updateCommitStatuses(commits, commitsView);
+			MarkupContainer container = commitsView.getParent();
+			target.addComponent(container);
+		}
 	}
 }
