@@ -1289,7 +1289,24 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 			throw new NoSuchElementException(String.valueOf(score));
 		}
 
-
+		public static CIScore fromJenkinsBuildResult(String jenkinsBuildResult) {
+			if ("SUCCESS".equalsIgnoreCase(jenkinsBuildResult)) {
+				return success;
+			}
+			if ("UNSTABLE".equalsIgnoreCase(jenkinsBuildResult)) {
+				return unstable;
+			}
+			if ("FAILURE".equalsIgnoreCase(jenkinsBuildResult) || "NOT_BUILT".equalsIgnoreCase(jenkinsBuildResult)) {
+				return failed;
+			}
+			if ("IN_PROGRESS".equalsIgnoreCase(jenkinsBuildResult)) {
+				return in_progress;
+			}
+			if ("ABORTED".equalsIgnoreCase(jenkinsBuildResult)) {
+				return aborted;
+			}
+			throw new NoSuchElementException(jenkinsBuildResult);
+		}
 	}
 
 	public enum Field {
