@@ -27,10 +27,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
@@ -47,6 +45,7 @@ public final class JenkinsHttpGate implements AutoCloseable
     private final CloseableHttpClient client;
     private final HttpContext localContext;
     private final String jobName;
+    private final String jenkinsHost;
 
     /**
      * Creates Jenkins HTTP gate with given configuration.
@@ -93,11 +92,16 @@ public final class JenkinsHttpGate implements AutoCloseable
         client = clientBuilder.build();
         this.localContext = localContext;
         this.jobName = jobName;
+        if (host.endsWith("/")) {
+            jenkinsHost = host.substring(0, host.length() - 1);
+        } else {
+            jenkinsHost = host;
+        }
     }
 
     public List<BuildInfo> getCommitBuildStatuses(List<String> commits)
             throws JenkinsException {
-        String query = ENDPOINT_BUILD_STATUSES + "?commits=" + join(",", commits) + "&job=" + jobName;
+        String query = jenkinsHost + ENDPOINT_BUILD_STATUSES + "?commits=" + join(",", commits) + "&job=" + jobName;
         HttpGet method = new HttpGet(query);
 
         CloseableHttpResponse response = null;
