@@ -71,6 +71,7 @@ import org.apache.wicket.RestartResponseException;
 import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.behavior.SimpleAttributeModifier;
+import org.apache.wicket.markup.html.IHeaderResponse;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.image.ContextImage;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
@@ -943,8 +944,6 @@ public class TicketPage extends RepositoryPage {
 			if (ciIntegrationEnabled) {
 				CommitStatusUpdateAjaxBehavior ajaxBehavior = new CommitStatusUpdateAjaxBehavior(commits, commitsView);
 				add(ajaxBehavior);
-				//TODO also add javascript script to page here
-				System.out.println("ajax behavior added; callback url: " + ajaxBehavior.getCallbackUrl()); //TODO remove
 			}
 		}
 
@@ -1854,6 +1853,12 @@ public class TicketPage extends RepositoryPage {
 		private CommitStatusUpdateAjaxBehavior(List<RevCommit> commits, DataView<RevCommit> commitsView) {
 			this.commits = commits;
 			this.commitsView = commitsView;
+		}
+
+		@Override
+		public void renderHead(IHeaderResponse response) {
+			super.renderHead(response);
+			response.renderOnLoadJavascript("wicketAjaxUrlPost(\"" + getCallbackUrl() + "\")");
 		}
 
 		@Override
