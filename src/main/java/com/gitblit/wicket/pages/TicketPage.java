@@ -20,6 +20,7 @@ import com.gitblit.Constants.AccessPermission;
 import com.gitblit.Constants.AuthorizationControl;
 import com.gitblit.Keys;
 import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
+import com.gitblit.ci.jenkins.JenkinsHttpGate;
 import com.gitblit.git.PatchsetCommand;
 import com.gitblit.git.PatchsetReceivePack;
 import com.gitblit.models.PathModel.PathChangeModel;
@@ -936,10 +937,12 @@ public class TicketPage extends RepositoryPage {
 			patchsetFrag.add(commitsView);
 			add(patchsetFrag);
 
-			CommitStatusUpdateAjaxBehavior ajaxBehavior = new CommitStatusUpdateAjaxBehavior(commits, commitsView);
-			add(ajaxBehavior);
-			//TODO also add javascript script to page here
-			System.out.println("ajax behavior added; callback url: " + ajaxBehavior.getCallbackUrl()); //TODO remove
+			if (ciIntegrationEnabled) {
+				CommitStatusUpdateAjaxBehavior ajaxBehavior = new CommitStatusUpdateAjaxBehavior(commits, commitsView);
+				add(ajaxBehavior);
+				//TODO also add javascript script to page here
+				System.out.println("ajax behavior added; callback url: " + ajaxBehavior.getCallbackUrl()); //TODO remove
+			}
 		}
 
 
@@ -1803,7 +1806,11 @@ public class TicketPage extends RepositoryPage {
 				}
 			}
 			logger.info("Updating " + commitsToCheckBuildStatus.size() + " commit statuses");
-			//TODO do HTTP request to Jenkins and update commit statuses here
+
+			RepositoryModel repositoryModel = getRepositoryModel();
+			JenkinsHttpGate jenkinsGate = new JenkinsHttpGate(repositoryModel.CIUrl, repositoryModel.jenkinsUsername,
+															  repositoryModel.jenkinsApiToken, repositoryModel.jobname);
+
 			JGitUtils.addNote(getRepository(), commitsToCheckBuildStatus.get(0).getName(), "Test note added in updateCommitStatuses()"); //TODO remove
 		}
 	}

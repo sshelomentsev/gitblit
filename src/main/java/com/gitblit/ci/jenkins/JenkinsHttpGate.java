@@ -42,12 +42,18 @@ public final class JenkinsHttpGate implements AutoCloseable
 
     private final CloseableHttpClient client;
     private final HttpContext localContext;
+    private final String jobName;
 
-    public JenkinsHttpGate(String host) {
-        this(host, null, null);
-    }
-
-    public JenkinsHttpGate(String host, String username, String apiToken) {
+    /**
+     * Creates Jenkins HTTP gate with given configuration.
+     * @param host Jenkins root URL.
+     * @param username Jenkins username; might be null or empty.
+     * @param apiToken Jenkins API token for given username.
+     * @param jobName Jenkins job name.
+     * @throws NullPointerException if given host is null.
+     * @throws IllegalArgumentException if given host is not a valid URL.
+     */
+    public JenkinsHttpGate(String host, String username, String apiToken, String jobName) {
         URI uri = URI.create(host);
         HttpClientBuilder clientBuilder = HttpClients.custom();
         HttpClientContext localContext = null;
@@ -55,18 +61,34 @@ public final class JenkinsHttpGate implements AutoCloseable
         // basic authentication
         if (!StringUtils.isEmpty(username)) {
             CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-            credentialsProvider.setCredentials(new AuthScope(uri.getHost(), uri.getPort()),
+
+            String scheme = uri.getScheme();
+            if (scheme == null) {
+                scheme = "http";
+            }
+
+            int port = uri.getPort();
+            if (port < 0) {
+                if ("http".equalsIgnoreCase(scheme)) {
+                    port = 80;
+                } else if ("https".equalsIgnoreCase(scheme)) {
+                    port = 443;
+                }
+            }
+
+            credentialsProvider.setCredentials(new AuthScope(uri.getHost(), port),
                                                new UsernamePasswordCredentials(username, apiToken));
             clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
 
             AuthCache authCache = new BasicAuthCache();
             BasicScheme basicAuth = new BasicScheme();
-            authCache.put(new HttpHost(uri.getHost(), uri.getPort(), uri.getScheme()), basicAuth);
+            authCache.put(new HttpHost(uri.getHost(), port, scheme), basicAuth);
             localContext = HttpClientContext.create();
             localContext.setAuthCache(authCache);
         }
         client = clientBuilder.build();
         this.localContext = localContext;
+        this.jobName = jobName;
     }
 
     public Map<String, TicketModel.CIScore> getCommitBuildStatuses(String ciJob, List<String> commits)
