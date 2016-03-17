@@ -91,9 +91,9 @@ public final class JenkinsHttpGate implements AutoCloseable
         this.jobName = jobName;
     }
 
-    public Map<String, TicketModel.CIScore> getCommitBuildStatuses(String ciJob, List<String> commits)
+    public Map<String, TicketModel.CIScore> getCommitBuildStatuses(List<String> commits)
             throws JenkinsException {
-        String query = ENDPOINT_BUILD_STATUSES + "?commits=" + join(",", commits) + "&job=" + ciJob;
+        String query = ENDPOINT_BUILD_STATUSES + "?commits=" + join(",", commits) + "&job=" + jobName;
         HttpGet method = new HttpGet(query);
 
         CloseableHttpResponse response = null;
@@ -122,7 +122,7 @@ public final class JenkinsHttpGate implements AutoCloseable
                 throw new JenkinsException("Forbidden");
             } else if (HttpStatus.SC_BAD_REQUEST == httpCode) {
                 throw new JenkinsException(String.format(
-                        "Bad request; job: %s, commits: %s", ciJob, commits.toString()));
+                        "Bad request; job: %s, commits: %s", jobName, commits.toString()));
             } else if (HttpStatus.SC_INTERNAL_SERVER_ERROR == httpCode) {
                 throw new JenkinsException("Internal Jenkins server error");
             } else {
