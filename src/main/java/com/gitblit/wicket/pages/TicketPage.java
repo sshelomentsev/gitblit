@@ -19,8 +19,10 @@ import com.gitblit.Constants;
 import com.gitblit.Constants.AccessPermission;
 import com.gitblit.Constants.AuthorizationControl;
 import com.gitblit.Keys;
+import com.gitblit.ci.jenkins.JenkinsException;
 import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
 import com.gitblit.ci.jenkins.JenkinsHttpGate;
+import com.gitblit.ci.jenkins.model.BuildInfo;
 import com.gitblit.git.PatchsetCommand;
 import com.gitblit.git.PatchsetReceivePack;
 import com.gitblit.models.PathModel.PathChangeModel;
@@ -97,6 +99,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.TreeSet;
@@ -1794,7 +1797,7 @@ public class TicketPage extends RepositoryPage {
 	}
 
 	private synchronized void updateCommitStatuses(List<RevCommit> commits, DataView<RevCommit> commitsView) {
-		synchronized (TicketPage.class) {
+		synchronized (TicketPage.class) { // protection from concurrency git notes update operations
 			List<RevCommit> commitsToCheckBuildStatus = new ArrayList<>();
 			for (RevCommit commit : commits) {
 				if (commitIsTooOld(commit)) {
@@ -1810,8 +1813,32 @@ public class TicketPage extends RepositoryPage {
 			RepositoryModel repositoryModel = getRepositoryModel();
 			JenkinsHttpGate jenkinsGate = new JenkinsHttpGate(repositoryModel.CIUrl, repositoryModel.jenkinsUsername,
 															  repositoryModel.jenkinsApiToken, repositoryModel.jobname);
+			List<String> commitSha1Hashes = new ArrayList<>();
+			for (RevCommit commit : commitsToCheckBuildStatus) {
+				commitSha1Hashes.add(commit.getName());
+			}
+			try {
+				List<BuildInfo> buildInfos = jenkinsGate.getCommitBuildStatuses(commitSha1Hashes);
+				// now handle the jenkins response and add git notes to commits
+				for (BuildInfo buildInfo : buildInfos) {
+					String sha1 = buildInfo.getCommit();
+					String buildUrl = buildInfo.getUrl();
+					CIScore buildStatus = buildInfo.getBuildStatus();
 
-			JGitUtils.addNote(getRepository(), commitsToCheckBuildStatus.get(0).getName(), "Test note added in updateCommitStatuses()"); //TODO remove
+					for (RevCommit commit : commits) {
+						if (Objects.equals(commit.getName(), sha1)) {
+							String noteToAdd = JenkinsGitNoteUtils.createNoteBuilder()
+									.addCiBuildStatus(buildStatus)
+									.addCiJobUrl(buildUrl)
+									.build();
+							JGitUtils.addNote(getRepository(), commit.getName(), noteToAdd);
+							break;
+						}
+					}
+				}
+			} catch (JenkinsException e) {
+				logger.warn("Exception while working with Jenkins during the build statuses update", e);
+			}
 		}
 	}
 

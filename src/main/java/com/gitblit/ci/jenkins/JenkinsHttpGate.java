@@ -1,5 +1,6 @@
 package com.gitblit.ci.jenkins;
 
+import com.gitblit.ci.jenkins.model.BuildInfo;
 import com.gitblit.models.TicketModel;
 import com.gitblit.utils.StringUtils;
 import org.apache.commons.io.IOUtils;
@@ -25,6 +26,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -39,6 +41,8 @@ import java.util.NoSuchElementException;
 public final class JenkinsHttpGate implements AutoCloseable
 {
     private static final String ENDPOINT_BUILD_STATUSES = "/gitblit/buildStatuses";
+    private static final String JSON_KEY_BUILD_URL = "url";
+    private static final String JSON_KEY_BUILD_RESULT = "result";
 
     private final CloseableHttpClient client;
     private final HttpContext localContext;
@@ -91,7 +95,7 @@ public final class JenkinsHttpGate implements AutoCloseable
         this.jobName = jobName;
     }
 
-    public Map<String, TicketModel.CIScore> getCommitBuildStatuses(List<String> commits)
+    public List<BuildInfo> getCommitBuildStatuses(List<String> commits)
             throws JenkinsException {
         String query = ENDPOINT_BUILD_STATUSES + "?commits=" + join(",", commits) + "&job=" + jobName;
         HttpGet method = new HttpGet(query);
@@ -103,18 +107,20 @@ public final class JenkinsHttpGate implements AutoCloseable
             if (HttpStatus.SC_OK == httpCode) {
                 try {
                     JSONObject responseJson = new JSONObject(EntityUtils.toString(response.getEntity()));
-                    Map<String, TicketModel.CIScore> buildResults = new HashMap<>();
+                    List<BuildInfo> buildInfos = new ArrayList<>();
                     Iterator<String> keysIter = responseJson.keys();
                     while (keysIter.hasNext()) {
                         String sha1 = keysIter.next();
-                        String buildStatus = responseJson.getString(sha1);
+                        JSONObject infoForSha1 = responseJson.getJSONObject(sha1);
+                        String buildUrl = infoForSha1.getString(JSON_KEY_BUILD_URL);
+                        String buildResult = infoForSha1.getString(JSON_KEY_BUILD_RESULT);
                         try {
-                            TicketModel.CIScore ciScore = TicketModel.CIScore.fromJenkinsBuildResult(buildStatus);
-                            buildResults.put(sha1, ciScore);
+                            TicketModel.CIScore ciScore = TicketModel.CIScore.fromJenkinsBuildResult(buildResult);
+                            buildInfos.add(new BuildInfo(sha1, ciScore, buildUrl));
                         } catch (NoSuchElementException ignore) {
                         }
                     }
-                    return buildResults;
+                    return buildInfos;
                 } catch (JSONException e) {
                     throw new JenkinsException("Cannot process response JSON", e);
                 }

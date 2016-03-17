@@ -1,5 +1,7 @@
 package com.gitblit.ci.jenkins.model;
 
+import com.gitblit.models.TicketModel;
+
 /**
  * Information about executed build in Jenkins.
  *
@@ -11,17 +13,18 @@ public class BuildInfo {
      */
     private final String commit;
     /**
-     * String representation of the build result: SUCCESS, UNSTABLE, FAILURE, NOT_BUILD, ABORTED, IN_PROGRESS.
+     * Status of this build.
+     * @see com.gitblit.models.TicketModel.CIScore
      */
-    private final String result;
+    private final TicketModel.CIScore buildStatus;
     /**
      * Build URL.
      */
     private final String url;
 
-    public BuildInfo(String commit, String result, String url) {
+    public BuildInfo(String commit, TicketModel.CIScore buildStatus, String url) {
         this.commit = commit;
-        this.result = result;
+        this.buildStatus = buildStatus;
         this.url = url;
     }
 
@@ -29,8 +32,8 @@ public class BuildInfo {
         return commit;
     }
 
-    public String getResult() {
-        return result;
+    public TicketModel.CIScore getBuildStatus() {
+        return buildStatus;
     }
 
     public String getUrl() {
