@@ -1,6 +1,7 @@
 package com.gitblit.ci.jenkins;
 
 import com.gitblit.ci.jenkins.model.BuildInfo;
+import com.gitblit.ci.jenkins.model.CheckJobResult;
 import com.gitblit.models.TicketModel;
 import com.gitblit.utils.StringUtils;
 import org.apache.commons.io.IOUtils;
@@ -26,6 +27,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.net.URI;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -38,6 +40,7 @@ import java.util.NoSuchElementException;
  */
 public final class JenkinsHttpGate implements AutoCloseable
 {
+    private static final String ENDPOINT_CHECK_JOB = "/job/{0}/api/json";
     private static final String ENDPOINT_BUILD_STATUSES = "/gitblit/buildStatuses";
     private static final String JSON_KEY_BUILD_URL = "url";
     private static final String JSON_KEY_BUILD_RESULT = "result";
@@ -156,6 +159,29 @@ public final class JenkinsHttpGate implements AutoCloseable
         return builder.toString();
     }
 
+    public CheckJobResult checkJob() throws JenkinsException {
+        String query = jenkinsHost + MessageFormat.format(ENDPOINT_CHECK_JOB, jobName);
+        HttpGet method = new HttpGet(query);
+
+        CloseableHttpResponse response = null;
+        try {
+            response = client.execute(method, localContext);
+            int httpCode = response.getStatusLine().getStatusCode();
+            if (HttpStatus.SC_OK == httpCode) {
+                return CheckJobResult.Ok;
+            } else if (HttpStatus.SC_FORBIDDEN == httpCode) {
+                return CheckJobResult.Forbidden;
+            } else if (HttpStatus.SC_NOT_FOUND == httpCode) {
+                return CheckJobResult.NotFound;
+            } else {
+                throw new JenkinsException("Unknown HTTP status code in the response: " + httpCode);
+            }
+        } catch (IOException e) {
+            throw new JenkinsException(e);
+        } finally {
+            IOUtils.closeQuietly(response);
+        }
+    }
 
     @Override
     public void close() {
