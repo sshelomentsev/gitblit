@@ -72,13 +72,13 @@ import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.behavior.SimpleAttributeModifier;
 import org.apache.wicket.markup.html.IHeaderResponse;
+import org.apache.wicket.markup.html.WebMarkupContainer;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.image.ContextImage;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.link.ExternalLink;
 import org.apache.wicket.markup.html.panel.EmptyPanel;
 import org.apache.wicket.markup.html.panel.Fragment;
-import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.markup.repeater.data.ListDataProvider;
@@ -141,8 +141,8 @@ public class TicketPage extends RepositoryPage {
 	private final boolean ciIntegrationEnabled;
 	private final Patchset currentPatchset;
 
-	private Fragment ciApprovalsPanel; // 'Commits' tab; can be null if there's no patchset
-	private final Fragment ticketBuildStatusPanel; // 'Discussion' tab; can be null if CI integration is disabled
+	private WebMarkupContainer ciApprovalsPanel; // 'Commits' tab; can be empty if there's no patchset
+	private final WebMarkupContainer ticketBuildStatusPanel; // 'Discussion' tab; can be empty if CI integration is disabled
 
 	public TicketPage(PageParameters params) {
 		super(params);
@@ -650,9 +650,7 @@ public class TicketPage extends RepositoryPage {
 
 		CiScoreInfo ciScoreInfo = new CiScoreInfo(ciIntegrationEnabled, currentPatchset);
 		ticketBuildStatusPanel = createTicketBuildStatusPanel(ciIntegrationEnabled, ciScoreInfo);
-		if (ticketBuildStatusPanel != null) {
-			add(ticketBuildStatusPanel);
-		}
+		add(ticketBuildStatusPanel);
 
 		/*
 		 * TOPIC & LABELS (DISCUSSION TAB->SIDE BAR)
@@ -1068,9 +1066,9 @@ public class TicketPage extends RepositoryPage {
 		add(revisionHistory);
 	}
 
-	private Fragment createTicketBuildStatusPanel(boolean ciIntegrationEnabled, CiScoreInfo ciScoreInfo) {
+	private WebMarkupContainer createTicketBuildStatusPanel(boolean ciIntegrationEnabled, CiScoreInfo ciScoreInfo) {
 		String ticketBuildStatusPanelName = "ticketBuildStatusPanel";
-		Fragment ticketBuildStatusPanel;
+		WebMarkupContainer ticketBuildStatusPanel;
 		if (ciIntegrationEnabled) {
 			ticketBuildStatusPanel = new Fragment(ticketBuildStatusPanelName, "ticketBuildStatusFragment", this);
 			ticketBuildStatusPanel.add(new LinkPanel("ticketBuildStatus", null,
@@ -1079,7 +1077,8 @@ public class TicketPage extends RepositoryPage {
 			WicketUtils.addCssClass(icon, ciScoreInfo.ciScoreCssClass);
 			ticketBuildStatusPanel.add(icon);
 		} else {
-			ticketBuildStatusPanel = null;
+			ticketBuildStatusPanel = new WebMarkupContainer(ticketBuildStatusPanelName);
+			ticketBuildStatusPanel.setVisible(false);
 		}
 		return ticketBuildStatusPanel;
 	}
@@ -1173,11 +1172,9 @@ public class TicketPage extends RepositoryPage {
 
 
 		// CI approvals
-		Fragment approvalsPanel = createApprovalsPanel(buildStatusDesc, ciBuildUrl, ciScoreCssClass);
-		if (approvalsPanel != null) {
-			panel.add(approvalsPanel);
-			ciApprovalsPanel = approvalsPanel;
-		}
+		WebMarkupContainer approvalsPanel = createApprovalsPanel(buildStatusDesc, ciBuildUrl, ciScoreCssClass);
+		panel.add(approvalsPanel);
+		ciApprovalsPanel = approvalsPanel;
 
 		// reviews
 		List<Change> reviews = ticket.getReviews(currentPatchset);
@@ -1352,9 +1349,9 @@ public class TicketPage extends RepositoryPage {
 		return panel;
 	}
 
-	private Fragment createApprovalsPanel(String buildStatusDesc, String ciBuildUrl, String ciScoreCssClass) {
+	private WebMarkupContainer createApprovalsPanel(String buildStatusDesc, String ciBuildUrl, String ciScoreCssClass) {
 		String approvalsPanelName = "approvalsPanel";
-		Fragment approvalsPanel;
+		WebMarkupContainer approvalsPanel;
 		if (buildStatusDesc != null) {
 			approvalsPanel = new Fragment(approvalsPanelName, "approvalsFragment", this);
 			approvalsPanel.add(new LinkPanel("approvals", null, buildStatusDesc, ciBuildUrl));
@@ -1362,7 +1359,8 @@ public class TicketPage extends RepositoryPage {
 			WicketUtils.addCssClass(icon, ciScoreCssClass);
 			approvalsPanel.add(icon);
 		} else {
-			approvalsPanel = null;
+			approvalsPanel = new WebMarkupContainer(approvalsPanelName);
+			approvalsPanel.setVisible(false);
 		}
 		return approvalsPanel;
 	}
@@ -1815,7 +1813,7 @@ public class TicketPage extends RepositoryPage {
 			int updatedCount = 0;
 			try {
 				List<BuildInfo> buildInfos = jenkinsGate.getCommitBuildStatuses(commitSha1Hashes);
-				logger.info("Received information for " + buildInfos.size() + " commits: ");
+				logger.info("Received information for " + buildInfos.size() + " commits");
 				// now handle the jenkins response and add git notes to commits
 				for (BuildInfo buildInfo : buildInfos) {
 					String sha1 = buildInfo.getCommit();
