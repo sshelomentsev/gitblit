@@ -641,49 +641,8 @@ public class TicketPage extends RepositoryPage {
 		final boolean ciIntegrationEnabled = repository.enableCI &&
 				Constants.JENKINS.equalsIgnoreCase(repository.CIType);
 
-		// ticket build status - showed in 'discussion' and 'commits' tabs
-		String ciScoreDesc;
-		String ciBuildUrl;
-		String ciScoreCssClass;
-		if (ciIntegrationEnabled) {
-			if (currentPatchset == null) {
-				// there's no patchset
-				ciScoreDesc = getString("gb.CINotVerified"); // not verified if there's no patchset
-				ciBuildUrl = null;
-				ciScoreCssClass = CSS_COG;
-			} else {
-				String lastCommitNote = getNoteForCommit(JGitUtils.getCommit(getRepository(), currentPatchset.tip));
-				if (lastCommitNote == null) {
-					// there is no git note; assuming CI build is in progress
-					ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
-					ciBuildUrl = null;
-					ciScoreCssClass = CSS_SPINNER;
-				} else {
-					// have to read git note second time here
-					CIScore ticketCiBuildStatus = ticket.getTicketCiBuildStatus();
-					if (ticketCiBuildStatus != null) {
-						ciScoreDesc = getCIScoreDescription(ticketCiBuildStatus);
-						ciScoreCssClass = getCIScoreClass(ticketCiBuildStatus);
-					} else {
-						// cannot read CI build status from git note
-						ciScoreDesc = getString("gb.CINotVerified");
-						ciScoreCssClass = CSS_COG;
-					}
-					ciBuildUrl = JenkinsGitNoteUtils.readCiJobUrl(lastCommitNote); // may be null
-				}
-			}
-			add(new LinkPanel("ticketBuildStatus", null, ciScoreDesc, ciBuildUrl));
-			EmptyPanel icon = new EmptyPanel("ticketBuildStatusIcon");
-			WicketUtils.addCssClass(icon, ciScoreCssClass);
-			add(icon);
-		} else {
-			add(new EmptyPanel("ticketBuildStatus").setVisible(false));
-			add(new EmptyPanel("ticketBuildStatusIcon").setVisible(false));
-			ciScoreDesc = null;
-			ciBuildUrl = null;
-			ciScoreCssClass = null;
-		}
-
+		CiScoreInfo ciScoreInfo = new CiScoreInfo(ciIntegrationEnabled, currentPatchset);
+		renderTicketBuildStatusAtDiscussionTab(ciIntegrationEnabled, ciScoreInfo);
 
 		/*
 		 * TOPIC & LABELS (DISCUSSION TAB->SIDE BAR)
@@ -866,7 +825,8 @@ public class TicketPage extends RepositoryPage {
 
 			if (ticket.isOpen()) {
 				// current revision
-				MarkupContainer panel = createPatchsetPanel("panel", repository, user, ciScoreDesc, ciBuildUrl, ciScoreCssClass);
+				MarkupContainer panel = createPatchsetPanel("panel", repository, user, ciScoreInfo.ciScoreDesc,
+															ciScoreInfo.ciBuildUrl, ciScoreInfo.ciScoreCssClass);
 				patchsetFrag.add(panel);
 				addUserAttributions(patchsetFrag, currentRevision, avatarWidth);
 				addUserAttributions(panel, currentRevision, 0);
@@ -1096,6 +1056,18 @@ public class TicketPage extends RepositoryPage {
 		};
 		revisionHistory.add(eventsView);
 		add(revisionHistory);
+	}
+
+	private void renderTicketBuildStatusAtDiscussionTab(boolean ciIntegrationEnabled, CiScoreInfo ciScoreInfo) {
+		if (ciIntegrationEnabled) {
+			add(new LinkPanel("ticketBuildStatus", null, ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl));
+			EmptyPanel icon = new EmptyPanel("ticketBuildStatusIcon");
+			WicketUtils.addCssClass(icon, ciScoreInfo.ciScoreCssClass);
+			add(icon);
+		} else {
+			add(new EmptyPanel("ticketBuildStatus").setVisible(false));
+			add(new EmptyPanel("ticketBuildStatusIcon").setVisible(false));
+		}
 	}
 
 	protected void addUserAttributions(MarkupContainer container, Change entry, int avatarSize) {
@@ -1795,7 +1767,7 @@ public class TicketPage extends RepositoryPage {
 		return JGitUtils.getNote(getRepository(), commit.getName());
 	}
 
-	private synchronized void updateCommitStatuses(List<RevCommit> commits, DataView<RevCommit> commitsView) {
+	private synchronized void updateCommitStatuses(List<RevCommit> commits) {
 		synchronized (TicketPage.class) { // protection from concurrency git notes update operations
 			List<RevCommit> commitsToCheckBuildStatus = new ArrayList<>();
 			for (RevCommit commit : commits) {
@@ -1848,9 +1820,9 @@ public class TicketPage extends RepositoryPage {
 
 	private class CommitStatusUpdateAjaxBehavior extends AbstractDefaultAjaxBehavior {
 		private final List<RevCommit> commits;
-		private final DataView<RevCommit> commitsView;
+		private final Component commitsView;
 
-		private CommitStatusUpdateAjaxBehavior(List<RevCommit> commits, DataView<RevCommit> commitsView) {
+		private CommitStatusUpdateAjaxBehavior(List<RevCommit> commits, Component commitsView) {
 			this.commits = commits;
 			this.commitsView = commitsView;
 		}
@@ -1869,9 +1841,53 @@ public class TicketPage extends RepositoryPage {
 
 		@Override
 		protected void respond(AjaxRequestTarget target) {
-			updateCommitStatuses(commits, commitsView);
+			updateCommitStatuses(commits);
 			MarkupContainer container = commitsView.getParent();
 			target.addComponent(container);
+		}
+	}
+
+	/**
+	 * Data that is required to render ticket build status at the page.
+	 */
+	private class CiScoreInfo {
+		private final String ciScoreDesc;
+		private final String ciBuildUrl;
+		private final String ciScoreCssClass;
+
+		private CiScoreInfo(boolean ciIntegrationEnabled, Patchset currentPatchset) {
+			if (ciIntegrationEnabled) {
+				if (currentPatchset == null) {
+					// there's no patchset
+					ciScoreDesc = getString("gb.CINotVerified"); // not verified if there's no patchset
+					ciBuildUrl = null;
+					ciScoreCssClass = CSS_COG;
+				} else {
+					String lastCommitNote = getNoteForCommit(JGitUtils.getCommit(getRepository(), currentPatchset.tip));
+					if (lastCommitNote == null) {
+						// there is no git note; assuming CI build is in progress
+						ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
+						ciBuildUrl = null;
+						ciScoreCssClass = CSS_SPINNER;
+					} else {
+						// have to read git note second time here
+						CIScore ticketCiBuildStatus = ticket.getTicketCiBuildStatus();
+						if (ticketCiBuildStatus != null) {
+							ciScoreDesc = getCIScoreDescription(ticketCiBuildStatus);
+							ciScoreCssClass = getCIScoreClass(ticketCiBuildStatus);
+						} else {
+							// cannot read CI build status from git note
+							ciScoreDesc = getString("gb.CINotVerified");
+							ciScoreCssClass = CSS_COG;
+						}
+						ciBuildUrl = JenkinsGitNoteUtils.readCiJobUrl(lastCommitNote); // may be null
+					}
+				}
+			} else {
+				ciScoreDesc = null;
+				ciBuildUrl = null;
+				ciScoreCssClass = null;
+			}
 		}
 	}
 }
