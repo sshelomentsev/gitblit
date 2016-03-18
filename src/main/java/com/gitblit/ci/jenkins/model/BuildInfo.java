@@ -39,4 +39,13 @@ public class BuildInfo {
     public String getUrl() {
         return url;
     }
+
+    @Override
+    public String toString() {
+        return "BuildInfo{" +
+                "commit='" + commit + '\'' +
+                ", buildStatus=" + buildStatus +
+                ", url='" + url + '\'' +
+                '}';
+    }
 }
