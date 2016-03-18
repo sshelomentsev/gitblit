@@ -1646,7 +1646,7 @@ public class TicketPage extends RepositoryPage {
 				} else {
 					mergePanel.add(new Label("reviewMergeMore").setVisible(false));
 				}
-				if (!ciBuildSuccessful) {
+				if (ciIntegrationEnabled && !ciBuildSuccessful) {
 					mergePanel.add(new Label("ciMergeMore", MessageFormat.format(getString("gb.ciBuildStatusIsNotSuccessMore"), ticket.mergeTo)));
 				} else {
 					mergePanel.add(new Label("ciMergeMore").setVisible(false));
