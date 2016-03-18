@@ -78,6 +78,7 @@ import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.link.ExternalLink;
 import org.apache.wicket.markup.html.panel.EmptyPanel;
 import org.apache.wicket.markup.html.panel.Fragment;
+import org.apache.wicket.markup.html.panel.Panel;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.markup.repeater.data.ListDataProvider;
@@ -1159,16 +1160,7 @@ public class TicketPage extends RepositoryPage {
 
 
 		// CI approvals
-		if (buildStatusDesc != null) {
-			panel.add(new LinkPanel("approvals", null, buildStatusDesc, ciBuildUrl));
-			EmptyPanel icon = new EmptyPanel("approvalsIcon");
-			WicketUtils.addCssClass(icon, ciScoreCssClass);
-			panel.add(icon);
-		} else {
-			// CI integration is disabled
-			panel.add(new EmptyPanel("approvals").setVisible(false));
-			panel.add(new EmptyPanel("approvalsIcon").setVisible(false));
-		}
+		panel.add(createApprovalsPanel(buildStatusDesc, ciBuildUrl,ciScoreCssClass));
 
 		// reviews
 		List<Change> reviews = ticket.getReviews(currentPatchset);
@@ -1341,6 +1333,24 @@ public class TicketPage extends RepositoryPage {
 		addGitCheckoutInstructions(user, repository, panel);
 
 		return panel;
+	}
+
+	private Component createApprovalsPanel(String buildStatusDesc, String ciBuildUrl, String ciScoreCssClass) {
+		String approvalsPanelName = "approvalsPanel";
+		Panel approvalsPanel;
+		if (buildStatusDesc != null) {
+			approvalsPanel = new Panel(approvalsPanelName);
+			approvalsPanel.add(new LinkPanel("approvals", null, buildStatusDesc, ciBuildUrl));
+			EmptyPanel icon = new EmptyPanel("approvalsIcon");
+			WicketUtils.addCssClass(icon, ciScoreCssClass);
+			approvalsPanel.add(icon);
+		} else {
+			// CI integration is disabled
+			approvalsPanel = new EmptyPanel(approvalsPanelName);
+			approvalsPanel.add(new EmptyPanel("approvals").setVisible(false));
+			approvalsPanel.add(new EmptyPanel("approvalsIcon").setVisible(false));
+		}
+		return approvalsPanel.setVisible(false);
 	}
 
 	protected IconAjaxLink<String> createReviewLink(String wicketId, final Score score) {
