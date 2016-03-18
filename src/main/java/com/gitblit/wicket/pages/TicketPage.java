@@ -1800,7 +1800,7 @@ public class TicketPage extends RepositoryPage {
 		return JGitUtils.getNote(getRepository(), commit.getName());
 	}
 
-	private synchronized void updateCommitStatuses(List<RevCommit> commits) {
+	private synchronized int updateCommitStatuses(List<RevCommit> commits) {
 		synchronized (TicketPage.class) { // protection from concurrency git notes update operations
 			List<RevCommit> commitsToCheckBuildStatus = new ArrayList<>();
 			for (RevCommit commit : commits) {
@@ -1812,7 +1812,7 @@ public class TicketPage extends RepositoryPage {
 					commitsToCheckBuildStatus.add(commit);
 				}
 			}
-			logger.info("Updating " + commitsToCheckBuildStatus.size() + " commit statuses");
+			logger.info("Requesting " + commitsToCheckBuildStatus.size() + " commit statuses");
 
 			RepositoryModel repositoryModel = getRepositoryModel();
 			JenkinsHttpGate jenkinsGate = new JenkinsHttpGate(repositoryModel.CIUrl, repositoryModel.jenkinsUsername,
@@ -1821,8 +1821,10 @@ public class TicketPage extends RepositoryPage {
 			for (RevCommit commit : commitsToCheckBuildStatus) {
 				commitSha1Hashes.add(commit.getName());
 			}
+			int updatedCount = 0;
 			try {
 				List<BuildInfo> buildInfos = jenkinsGate.getCommitBuildStatuses(commitSha1Hashes);
+				logger.info("Received information for " + buildInfos.size() + " commits: ");
 				// now handle the jenkins response and add git notes to commits
 				for (BuildInfo buildInfo : buildInfos) {
 					String sha1 = buildInfo.getCommit();
@@ -1836,6 +1838,7 @@ public class TicketPage extends RepositoryPage {
 									.addCiJobUrl(buildUrl)
 									.build();
 							JGitUtils.addNote(getRepository(), commit.getName(), noteToAdd);
+							updatedCount++;
 							break;
 						}
 					}
@@ -1843,6 +1846,7 @@ public class TicketPage extends RepositoryPage {
 			} catch (JenkinsException e) {
 				logger.warn("Exception while working with Jenkins during the build statuses update", e);
 			}
+			return updatedCount;
 		}
 	}
 
@@ -1883,21 +1887,28 @@ public class TicketPage extends RepositoryPage {
 
 		@Override
 		protected void respond(AjaxRequestTarget target) {
-			updateCommitStatuses(commits);
-			MarkupContainer container = commitsView.getParent();
-			target.addComponent(container);
+			// request the build statuses from Jenkins
+			int updatedCount = updateCommitStatuses(commits);
+			if (updatedCount > 0) {
+				// update the commits view
+				MarkupContainer container = commitsView.getParent();
+				target.addComponent(container);
 
-			CiScoreInfo ciScoreInfo = new CiScoreInfo(ciIntegrationEnabled, currentPatchset);
+				// read the actual data from git notes
+				CiScoreInfo ciScoreInfo = new CiScoreInfo(ciIntegrationEnabled, currentPatchset);
 
-			// CI build status at 'Discussion' tab
-			ticketBuildStatusPanel.replaceWith(createTicketBuildStatusPanel(ciIntegrationEnabled, ciScoreInfo));
-			target.addComponent(ticketBuildStatusPanel);
+				// CI build status at 'Discussion' tab
+				if (ticketBuildStatusPanel != null) {
+					ticketBuildStatusPanel.replaceWith(createTicketBuildStatusPanel(ciIntegrationEnabled, ciScoreInfo));
 
-			// CI Approvals panel at 'Commits' tab
-			if (ciApprovalsPanel != null) {
-				ciApprovalsPanel.replaceWith(createApprovalsPanel(ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl,
-																  ciScoreInfo.ciScoreCssClass));
-				target.addComponent(ciApprovalsPanel);
+					target.addComponent(ticketBuildStatusPanel);
+				}
+
+				// CI Approvals panel at 'Commits' tab
+				if (ciApprovalsPanel != null) {
+					ciApprovalsPanel.replaceWith(createApprovalsPanel(ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl, ciScoreInfo.ciScoreCssClass));
+					target.addComponent(ciApprovalsPanel);
+				}
 			}
 		}
 	}
