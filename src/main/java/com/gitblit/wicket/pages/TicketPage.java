@@ -137,6 +137,13 @@ public class TicketPage extends RepositoryPage {
 	final int avatarWidth = 40;
 	final TicketModel ticket;
 
+	// state of this page and connected objects
+	private final boolean ciIntegrationEnabled;
+	private final Patchset currentPatchset;
+
+	private Panel ciApprovalsPanel; // 'Commits' tab; can be empty if there's no patchset
+	private final Panel ticketBuildStatusPanel; // 'Discussion' tab; can be empty if CI integration is disabled
+
 	public TicketPage(PageParameters params) {
 		super(params);
 
@@ -171,7 +178,7 @@ public class TicketPage extends RepositoryPage {
 		}
 
 		final Change currentRevision = revisions.isEmpty() ? null : revisions.get(revisions.size() - 1);
-		final Patchset currentPatchset = ticket.getCurrentPatchset();
+		currentPatchset = ticket.getCurrentPatchset();
 
 		/*
 		 * TICKET HEADER
@@ -639,11 +646,11 @@ public class TicketPage extends RepositoryPage {
 		}
 
 		// defining whether the CI integration is enabled. Only Jenkins is supported now
-		final boolean ciIntegrationEnabled = repository.enableCI &&
-				Constants.JENKINS.equalsIgnoreCase(repository.CIType);
+		ciIntegrationEnabled = repository.enableCI && Constants.JENKINS.equalsIgnoreCase(repository.CIType);
 
 		CiScoreInfo ciScoreInfo = new CiScoreInfo(ciIntegrationEnabled, currentPatchset);
-		renderTicketBuildStatusAtDiscussionTab(ciIntegrationEnabled, ciScoreInfo);
+		ticketBuildStatusPanel = createTicketBuildStatusPanel(ciIntegrationEnabled, ciScoreInfo);
+		add(ticketBuildStatusPanel);
 
 		/*
 		 * TOPIC & LABELS (DISCUSSION TAB->SIDE BAR)
@@ -1059,16 +1066,22 @@ public class TicketPage extends RepositoryPage {
 		add(revisionHistory);
 	}
 
-	private void renderTicketBuildStatusAtDiscussionTab(boolean ciIntegrationEnabled, CiScoreInfo ciScoreInfo) {
+	private Panel createTicketBuildStatusPanel(boolean ciIntegrationEnabled, CiScoreInfo ciScoreInfo) {
+		Panel ticketBuildStatusPanel;
 		if (ciIntegrationEnabled) {
-			add(new LinkPanel("ticketBuildStatus", null, ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl));
+			ticketBuildStatusPanel = new Panel("ticketBuildStatusPanel");
+			ticketBuildStatusPanel.add(new LinkPanel("ticketBuildStatus", null,
+													 ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl));
 			EmptyPanel icon = new EmptyPanel("ticketBuildStatusIcon");
 			WicketUtils.addCssClass(icon, ciScoreInfo.ciScoreCssClass);
 			add(icon);
 		} else {
-			add(new EmptyPanel("ticketBuildStatus").setVisible(false));
-			add(new EmptyPanel("ticketBuildStatusIcon").setVisible(false));
+			ticketBuildStatusPanel = new EmptyPanel("ticketBuildStatusPanel");
+			ticketBuildStatusPanel.add(new EmptyPanel("ticketBuildStatus").setVisible(false));
+			ticketBuildStatusPanel.add(new EmptyPanel("ticketBuildStatusIcon").setVisible(false));
+			ticketBuildStatusPanel.setVisible(false);
 		}
+		return ticketBuildStatusPanel;
 	}
 
 	protected void addUserAttributions(MarkupContainer container, Change entry, int avatarSize) {
@@ -1160,7 +1173,9 @@ public class TicketPage extends RepositoryPage {
 
 
 		// CI approvals
-		panel.add(createApprovalsPanel(buildStatusDesc, ciBuildUrl,ciScoreCssClass));
+		Panel approvalsPanel = createApprovalsPanel(buildStatusDesc, ciBuildUrl, ciScoreCssClass);
+		panel.add(approvalsPanel);
+		ciApprovalsPanel = approvalsPanel;
 
 		// reviews
 		List<Change> reviews = ticket.getReviews(currentPatchset);
@@ -1335,7 +1350,7 @@ public class TicketPage extends RepositoryPage {
 		return panel;
 	}
 
-	private Component createApprovalsPanel(String buildStatusDesc, String ciBuildUrl, String ciScoreCssClass) {
+	private Panel createApprovalsPanel(String buildStatusDesc, String ciBuildUrl, String ciScoreCssClass) {
 		String approvalsPanelName = "approvalsPanel";
 		Panel approvalsPanel;
 		if (buildStatusDesc != null) {
@@ -1349,8 +1364,9 @@ public class TicketPage extends RepositoryPage {
 			approvalsPanel = new EmptyPanel(approvalsPanelName);
 			approvalsPanel.add(new EmptyPanel("approvals").setVisible(false));
 			approvalsPanel.add(new EmptyPanel("approvalsIcon").setVisible(false));
+			approvalsPanel.setVisible(false);
 		}
-		return approvalsPanel.setVisible(false);
+		return approvalsPanel;
 	}
 
 	protected IconAjaxLink<String> createReviewLink(String wicketId, final Score score) {
@@ -1854,6 +1870,19 @@ public class TicketPage extends RepositoryPage {
 			updateCommitStatuses(commits);
 			MarkupContainer container = commitsView.getParent();
 			target.addComponent(container);
+
+			CiScoreInfo ciScoreInfo = new CiScoreInfo(ciIntegrationEnabled, currentPatchset);
+
+			// CI build status at 'Discussion' tab
+			ticketBuildStatusPanel.replaceWith(createTicketBuildStatusPanel(ciIntegrationEnabled, ciScoreInfo));
+			target.addComponent(ticketBuildStatusPanel);
+
+			// CI Approvals panel at 'Commits' tab
+			if (ciApprovalsPanel != null) {
+				ciApprovalsPanel.replaceWith(createApprovalsPanel(ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl,
+																  ciScoreInfo.ciScoreCssClass));
+				target.addComponent(ciApprovalsPanel);
+			}
 		}
 	}
 
