@@ -74,9 +74,11 @@
 						<tr><th><wicket:message key="gb.milestone"></wicket:message></th><td><span wicket:id="milestone">[milestone]</span></td></tr>
 						<tr><th><wicket:message key="gb.votes"></wicket:message></th><td><span wicket:id="votes" class="badge">1</span> <a style="padding-left:5px" wicket:id="voteLink" href="#">vote</a></td></tr>
 						<tr><th><wicket:message key="gb.watchers"></wicket:message></th><td><span wicket:id="watchers" class="badge">1</span> <a style="padding-left:5px" wicket:id="watchLink" href="#">watch</a></td></tr>
-						<span wicket:id="ticketBuildStatusPanel">
-							<tr><th><wicket:message key="gb.buildStatus"></wicket:message></th><td><i wicket:id="ticketBuildStatusIcon" /> <span wicket:id="ticketBuildStatus">[ticket build status]</span></td></tr>
-						</span>
+						<wicket:enclosure child="ticketBuildStatusPanel">
+							<tr>
+								<div wicket:id="ticketBuildStatusPanel" />
+							</tr>
+						</wicket:enclosure>
 						<tr><th><wicket:message key="gb.export"></wicket:message></th><td><a rel="nofollow" target="_blank" wicket:id="exportJson"></a></td></tr>
 
 					</table>
@@ -140,6 +142,12 @@ pt push</pre>
 	</div>
 </wicket:fragment>
 
+<wicket:fragment wicket:id="ticketBuildStatusFragment">
+	<tr>
+		<th><wicket:message key="gb.buildStatus"></wicket:message></th>
+		<td><i wicket:id="ticketBuildStatusIcon"/> <span wicket:id="ticketBuildStatus">[ticket build status]</span></td>
+	</tr>
+</wicket:fragment>
 
 <!-- OPEN TICKET CONTROLS FRAGMENT -->
 <wicket:fragment wicket:id="openControlsFragment">
@@ -397,17 +405,7 @@ pt push</pre>
 		</div>
 	</div>
 
-	<span wicket:id="approvalsPanel">
-		<div style="padding: 10px;color: #444;background:white;border-top:1px solid #ccc;padding-right:10px;">
-			<span style="font-weight:bold;">
-				<wicket:message key="gb.CIServerApprovals" />
-			</span>
-			<br />
-			<wicket:message key="gb.ticketBuildStatus" />
-			<i wicket:id="approvalsIcon" />
-			<span wicket:id="approvals" style="padding-right: 10px;" />
-		</div>
-	</span>
+	<div wicket:id="approvalsPanel" />
 
 	<div style="padding: 10px;color: #444;background:white;border-top:1px solid #ccc;">
 		<div class="pull-right" wicket:id="reviewControls"></div>
@@ -460,6 +458,18 @@ pt push</pre>
  </div>
 </div>
 </div>
+</wicket:fragment>
+
+<wicket:fragment wicket:id="approvalsFragment">
+	<div style="padding: 10px;color: #444;background:white;border-top:1px solid #ccc;padding-right:10px;">
+			<span style="font-weight:bold;">
+				<wicket:message key="gb.CIServerApprovals" />
+			</span>
+		<br />
+		<wicket:message key="gb.ticketBuildStatus" />
+		<i wicket:id="approvalsIcon" />
+		<span wicket:id="approvals" style="padding-right: 10px;" />
+	</div>
 </wicket:fragment>
 
 <!--ACTIVITY -->

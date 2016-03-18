@@ -141,8 +141,8 @@ public class TicketPage extends RepositoryPage {
 	private final boolean ciIntegrationEnabled;
 	private final Patchset currentPatchset;
 
-	private Panel ciApprovalsPanel; // 'Commits' tab; can be empty if there's no patchset
-	private final Panel ticketBuildStatusPanel; // 'Discussion' tab; can be empty if CI integration is disabled
+	private Fragment ciApprovalsPanel; // 'Commits' tab; can be null if there's no patchset
+	private final Fragment ticketBuildStatusPanel; // 'Discussion' tab; can be null if CI integration is disabled
 
 	public TicketPage(PageParameters params) {
 		super(params);
@@ -650,7 +650,9 @@ public class TicketPage extends RepositoryPage {
 
 		CiScoreInfo ciScoreInfo = new CiScoreInfo(ciIntegrationEnabled, currentPatchset);
 		ticketBuildStatusPanel = createTicketBuildStatusPanel(ciIntegrationEnabled, ciScoreInfo);
-		add(ticketBuildStatusPanel);
+		if (ticketBuildStatusPanel != null) {
+			add(ticketBuildStatusPanel);
+		}
 
 		/*
 		 * TOPIC & LABELS (DISCUSSION TAB->SIDE BAR)
@@ -909,7 +911,7 @@ public class TicketPage extends RepositoryPage {
 			patchsetFrag.add(commitsView);
 			add(patchsetFrag);
 
-			if (ciIntegrationEnabled) {
+			if (ciIntegrationEnabled && commits.size() > 0) {
 				CommitStatusUpdateAjaxBehavior ajaxBehavior = new CommitStatusUpdateAjaxBehavior(commits, commitsView);
 				add(ajaxBehavior);
 			}
@@ -1066,20 +1068,22 @@ public class TicketPage extends RepositoryPage {
 		add(revisionHistory);
 	}
 
-	private Panel createTicketBuildStatusPanel(boolean ciIntegrationEnabled, CiScoreInfo ciScoreInfo) {
-		Panel ticketBuildStatusPanel;
+	private Fragment createTicketBuildStatusPanel(boolean ciIntegrationEnabled, CiScoreInfo ciScoreInfo) {
+		String ticketBuildStatusPanelName = "ticketBuildStatusPanel";
+		Fragment ticketBuildStatusPanel;
 		if (ciIntegrationEnabled) {
-			ticketBuildStatusPanel = new Panel("ticketBuildStatusPanel");
+			ticketBuildStatusPanel = new Fragment(ticketBuildStatusPanelName, "ticketBuildStatusFragment", this);
 			ticketBuildStatusPanel.add(new LinkPanel("ticketBuildStatus", null,
 													 ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl));
 			EmptyPanel icon = new EmptyPanel("ticketBuildStatusIcon");
 			WicketUtils.addCssClass(icon, ciScoreInfo.ciScoreCssClass);
-			add(icon);
+			ticketBuildStatusPanel.add(icon);
 		} else {
-			ticketBuildStatusPanel = new EmptyPanel("ticketBuildStatusPanel");
-			ticketBuildStatusPanel.add(new EmptyPanel("ticketBuildStatus").setVisible(false));
-			ticketBuildStatusPanel.add(new EmptyPanel("ticketBuildStatusIcon").setVisible(false));
-			ticketBuildStatusPanel.setVisible(false);
+//			ticketBuildStatusPanel = new EmptyPanel(ticketBuildStatusPanelName);
+//			ticketBuildStatusPanel.add(new EmptyPanel("ticketBuildStatus").setVisible(false));
+//			ticketBuildStatusPanel.add(new EmptyPanel("ticketBuildStatusIcon").setVisible(false));
+//			ticketBuildStatusPanel.setVisible(false);
+			ticketBuildStatusPanel = null;
 		}
 		return ticketBuildStatusPanel;
 	}
@@ -1173,9 +1177,11 @@ public class TicketPage extends RepositoryPage {
 
 
 		// CI approvals
-		Panel approvalsPanel = createApprovalsPanel(buildStatusDesc, ciBuildUrl, ciScoreCssClass);
-		panel.add(approvalsPanel);
-		ciApprovalsPanel = approvalsPanel;
+		Fragment approvalsPanel = createApprovalsPanel(buildStatusDesc, ciBuildUrl, ciScoreCssClass);
+		if (approvalsPanel != null) {
+			panel.add(approvalsPanel);
+			ciApprovalsPanel = approvalsPanel;
+		}
 
 		// reviews
 		List<Change> reviews = ticket.getReviews(currentPatchset);
@@ -1350,21 +1356,22 @@ public class TicketPage extends RepositoryPage {
 		return panel;
 	}
 
-	private Panel createApprovalsPanel(String buildStatusDesc, String ciBuildUrl, String ciScoreCssClass) {
+	private Fragment createApprovalsPanel(String buildStatusDesc, String ciBuildUrl, String ciScoreCssClass) {
 		String approvalsPanelName = "approvalsPanel";
-		Panel approvalsPanel;
+		Fragment approvalsPanel;
 		if (buildStatusDesc != null) {
-			approvalsPanel = new Panel(approvalsPanelName);
+			approvalsPanel = new Fragment(approvalsPanelName, "approvalsFragment", this);
 			approvalsPanel.add(new LinkPanel("approvals", null, buildStatusDesc, ciBuildUrl));
 			EmptyPanel icon = new EmptyPanel("approvalsIcon");
 			WicketUtils.addCssClass(icon, ciScoreCssClass);
 			approvalsPanel.add(icon);
 		} else {
 			// CI integration is disabled
-			approvalsPanel = new EmptyPanel(approvalsPanelName);
-			approvalsPanel.add(new EmptyPanel("approvals").setVisible(false));
-			approvalsPanel.add(new EmptyPanel("approvalsIcon").setVisible(false));
-			approvalsPanel.setVisible(false);
+//			approvalsPanel = new EmptyPanel(approvalsPanelName);
+//			approvalsPanel.add(new EmptyPanel("approvals").setVisible(false));
+//			approvalsPanel.add(new EmptyPanel("approvalsIcon").setVisible(false));
+//			approvalsPanel.setVisible(false);
+			approvalsPanel = null;
 		}
 		return approvalsPanel;
 	}
@@ -1863,6 +1870,15 @@ public class TicketPage extends RepositoryPage {
 		public void onConfigure(Component component) {
 			commitsView.setOutputMarkupId(true);
 			commitsView.getParent().setOutputMarkupId(true);
+
+			// if this method is called ciApprovalsPanel and ticketBuildStatusPanel can't be null;
+			// so this is just additional NPE protection
+			if (ticketBuildStatusPanel != null) {
+				ticketBuildStatusPanel.setOutputMarkupId(true);
+			}
+			if (ciApprovalsPanel != null) {
+				ciApprovalsPanel.setOutputMarkupId(true);
+			}
 		}
 
 		@Override
