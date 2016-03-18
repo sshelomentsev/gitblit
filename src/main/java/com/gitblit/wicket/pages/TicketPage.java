@@ -1079,10 +1079,6 @@ public class TicketPage extends RepositoryPage {
 			WicketUtils.addCssClass(icon, ciScoreInfo.ciScoreCssClass);
 			ticketBuildStatusPanel.add(icon);
 		} else {
-//			ticketBuildStatusPanel = new EmptyPanel(ticketBuildStatusPanelName);
-//			ticketBuildStatusPanel.add(new EmptyPanel("ticketBuildStatus").setVisible(false));
-//			ticketBuildStatusPanel.add(new EmptyPanel("ticketBuildStatusIcon").setVisible(false));
-//			ticketBuildStatusPanel.setVisible(false);
 			ticketBuildStatusPanel = null;
 		}
 		return ticketBuildStatusPanel;
@@ -1366,11 +1362,6 @@ public class TicketPage extends RepositoryPage {
 			WicketUtils.addCssClass(icon, ciScoreCssClass);
 			approvalsPanel.add(icon);
 		} else {
-			// CI integration is disabled
-//			approvalsPanel = new EmptyPanel(approvalsPanelName);
-//			approvalsPanel.add(new EmptyPanel("approvals").setVisible(false));
-//			approvalsPanel.add(new EmptyPanel("approvalsIcon").setVisible(false));
-//			approvalsPanel.setVisible(false);
 			approvalsPanel = null;
 		}
 		return approvalsPanel;
