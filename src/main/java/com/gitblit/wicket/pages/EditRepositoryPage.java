@@ -742,6 +742,7 @@ public class EditRepositoryPage extends RootSubPage {
 				resultLabel.setEscapeModelStrings(false);
 				form.replace(resultLabel);
 				target.addComponent(form);
+				target.appendJavascript("$('#ciTabLink').click();");
 			}
 		}.setDefaultFormProcessing(false));
 
