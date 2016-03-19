@@ -18,10 +18,19 @@ package com.gitblit.wicket.pages;
 import java.text.MessageFormat;
 import java.util.*;
 
+import com.gitblit.ci.jenkins.JenkinsException;
+import com.gitblit.ci.jenkins.JenkinsHttpGate;
+import com.gitblit.ci.jenkins.model.CheckJobResult;
+import com.gitblit.wicket.panels.LinkPanel;
 import com.gitblit.wicket.panels.PasswordOption;
+import org.apache.wicket.Component;
 import org.apache.wicket.PageParameters;
+import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.AjaxFormChoiceComponentUpdatingBehavior;
+import org.apache.wicket.ajax.markup.html.AjaxFallbackLink;
+import org.apache.wicket.ajax.markup.html.form.AjaxFallbackButton;
+import org.apache.wicket.ajax.markup.html.form.AjaxSubmitLink;
 import org.apache.wicket.behavior.SimpleAttributeModifier;
 import org.apache.wicket.extensions.markup.html.form.palette.Palette;
 import org.apache.wicket.markup.html.WebMarkupContainer;
@@ -32,10 +41,12 @@ import org.apache.wicket.markup.html.form.ChoiceRenderer;
 import org.apache.wicket.markup.html.form.DropDownChoice;
 import org.apache.wicket.markup.html.form.Form;
 import org.apache.wicket.markup.html.form.IChoiceRenderer;
+import org.apache.wicket.markup.html.form.PasswordTextField;
 import org.apache.wicket.markup.html.form.TextField;
 import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.html.list.ListItem;
 import org.apache.wicket.markup.html.list.ListView;
+import org.apache.wicket.markup.html.panel.EmptyPanel;
 import org.apache.wicket.model.CompoundPropertyModel;
 import org.apache.wicket.model.IModel;
 import org.apache.wicket.model.Model;
@@ -73,19 +84,17 @@ import com.gitblit.wicket.panels.TextOption;
 public class EditRepositoryPage extends RootSubPage {
 
 	private static final String JENKINS_VERIFICATION = "jenkins_verification";
+	private static final String JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID = "jenkinsCheckConfigurationResult";
+	private static final String JENKINS_CHECK_CONFIGURATION_BUTTON_WICKET_ID = "jenkinsCheckConfigurationButton";
 
+	private final Component jenkinsCheckConfigurationResult =
+			new EmptyPanel(JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID).setOutputMarkupId(true); // can be replaced via AJAX
 	private final boolean isCreate;
-
 	RepositoryNamePanel namePanel;
-
 	AccessPolicyPanel accessPolicyPanel;
-
 	private boolean isAdmin;
-
 	RepositoryModel repositoryModel;
-
 	private IModel<String> metricAuthorExclusions;
-
 	private IModel<String> mailingLists;
 
 	public EditRepositoryPage() {
@@ -271,7 +280,7 @@ public class EditRepositoryPage extends RootSubPage {
 
 		CompoundPropertyModel<RepositoryModel> rModel = new CompoundPropertyModel<RepositoryModel>(
 				repositoryModel);
-		Form<RepositoryModel> form = new Form<RepositoryModel>("editForm", rModel) {
+		final Form<RepositoryModel> form = new Form<RepositoryModel>("editForm", rModel) {
 
 			private static final long serialVersionUID = 1L;
 
@@ -680,6 +689,55 @@ public class EditRepositoryPage extends RootSubPage {
 		form.add(new PasswordOption("jenkinsApiToken", getString("gb.jenkinsApiToken"),
 									getString("gb.jenkinsApiTokenDescription"), "span6",
 									new PropertyModel<String>(repositoryModel, "jenkinsApiToken")));
+		form.add(jenkinsCheckConfigurationResult); // empty for now
+		form.add(new AjaxSubmitLink(JENKINS_CHECK_CONFIGURATION_BUTTON_WICKET_ID) {
+			@Override
+			protected void onSubmit(AjaxRequestTarget target, Form<?> f) {
+				Label resultLabel;
+				try {
+					String jenkinsUrl = ((TextField) f.get("CIUrl:text")).getInput();
+					String jenkinsUsername = ((TextField) f.get("jenkinsUsername:text")).getInput();
+					String jenkinsApiToken = ((PasswordTextField) f.get("jenkinsApiToken:text")).getInput();
+					String jenkinsJob = ((TextField) f.get("Jobname:text")).getInput();
+					if (!StringUtils.isEmpty(jenkinsUrl) && !StringUtils.isEmpty(jenkinsJob)) {
+						JenkinsHttpGate gate = new JenkinsHttpGate(jenkinsUrl, jenkinsUsername, jenkinsApiToken, jenkinsJob);
+						//TODO text i18n
+						String resultHtml;
+						try {
+							CheckJobResult result = gate.checkJob();
+							switch (result) {
+								case Ok:
+									resultHtml = "<span style=\"color: #007F00\">Configuration is correct</span>";
+									break;
+								case Forbidden:
+									resultHtml = "<span style=\"color: #FF0000\">Access denied; wrong username or password?</span>";
+									break;
+								case NotFound:
+									resultHtml = "<span style=\"color: #FF0000\">Job not found</span>";
+									break;
+								default:
+									//should never happen; means that CheckJobResult is updated and this method isn't.
+									resultHtml = null;
+							}
+						} catch (JenkinsException ignore) {
+							resultHtml = "<span style=\"color: #FF0000\">Cannot check the configuration; wrong URL?</span>";
+						}
+
+						resultLabel = new Label(JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID, resultHtml);
+					}
+					else {
+						resultLabel = new Label(JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID, "Jenkins URL and job name are required to test connection");
+					}
+				} catch (RuntimeException e) {
+					logger().warn("Exception while testing connection with Jenkins", e);
+					resultLabel = new Label(JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID,
+											"Cannot perform operation due to internal error");
+				}
+				resultLabel.setEscapeModelStrings(false);
+				form.replace(resultLabel);
+				target.addComponent(form);
+			}
+		}.setDefaultFormProcessing(false));
 
 		//
 		// FORM CONTROLS
