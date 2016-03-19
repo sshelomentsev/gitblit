@@ -833,8 +833,7 @@ public class TicketPage extends RepositoryPage {
 
 			if (ticket.isOpen()) {
 				// current revision
-				MarkupContainer panel = createPatchsetPanel("panel", repository, user, ciScoreInfo.ciScoreDesc,
-															ciScoreInfo.ciBuildUrl, ciScoreInfo.ciScoreCssClass);
+				MarkupContainer panel = createPatchsetPanel("panel", repository, user, ciScoreInfo);
 				patchsetFrag.add(panel);
 				addUserAttributions(patchsetFrag, currentRevision, avatarWidth);
 				addUserAttributions(panel, currentRevision, 0);
@@ -1131,7 +1130,7 @@ public class TicketPage extends RepositoryPage {
 	}
 
 	protected Fragment createPatchsetPanel(String wicketId, RepositoryModel repository, UserModel user,
-										   String buildStatusDesc, String ciBuildUrl, String ciScoreCssClass) {
+										   CiScoreInfo ciScoreInfo) {
 		final Patchset currentPatchset = ticket.getCurrentPatchset();
 		List<Patchset> patchsets = new ArrayList<Patchset>(ticket.getPatchsetRevisions(currentPatchset.number));
 		patchsets.remove(currentPatchset);
@@ -1172,7 +1171,7 @@ public class TicketPage extends RepositoryPage {
 
 
 		// CI approvals
-		WebMarkupContainer approvalsPanel = createApprovalsPanel(buildStatusDesc, ciBuildUrl, ciScoreCssClass);
+		WebMarkupContainer approvalsPanel = createApprovalsPanel(ciScoreInfo);
 		panel.add(approvalsPanel);
 		ciApprovalsPanel = approvalsPanel;
 
@@ -1349,14 +1348,14 @@ public class TicketPage extends RepositoryPage {
 		return panel;
 	}
 
-	private WebMarkupContainer createApprovalsPanel(String buildStatusDesc, String ciBuildUrl, String ciScoreCssClass) {
+	private WebMarkupContainer createApprovalsPanel(CiScoreInfo ciScoreInfo) {
 		String approvalsPanelName = "approvalsPanel";
 		WebMarkupContainer approvalsPanel;
-		if (buildStatusDesc != null) {
+		if (ciScoreInfo.ciScoreDesc != null) {
 			approvalsPanel = new Fragment(approvalsPanelName, "approvalsFragment", this);
-			approvalsPanel.add(new LinkPanel("approvals", null, buildStatusDesc, ciBuildUrl));
+			approvalsPanel.add(new LinkPanel("approvals", null, ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl));
 			EmptyPanel icon = new EmptyPanel("approvalsIcon");
-			WicketUtils.addCssClass(icon, ciScoreCssClass);
+			WicketUtils.addCssClass(icon, ciScoreInfo.ciScoreCssClass);
 			approvalsPanel.add(icon);
 		} else {
 			approvalsPanel = new WebMarkupContainer(approvalsPanelName);
@@ -1889,13 +1888,12 @@ public class TicketPage extends RepositoryPage {
 				// CI build status at 'Discussion' tab
 				if (ticketBuildStatusPanel != null) {
 					ticketBuildStatusPanel.replaceWith(createTicketBuildStatusPanel(ciIntegrationEnabled, ciScoreInfo));
-
 					target.addComponent(ticketBuildStatusPanel);
 				}
 
 				// CI Approvals panel at 'Commits' tab
 				if (ciApprovalsPanel != null) {
-					ciApprovalsPanel.replaceWith(createApprovalsPanel(ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl, ciScoreInfo.ciScoreCssClass));
+					ciApprovalsPanel.replaceWith(createApprovalsPanel(ciScoreInfo));
 					target.addComponent(ciApprovalsPanel);
 				}
 			}
