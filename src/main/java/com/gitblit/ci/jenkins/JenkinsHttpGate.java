@@ -171,7 +171,7 @@ public final class JenkinsHttpGate implements AutoCloseable
             int httpCode = response.getStatusLine().getStatusCode();
             if (HttpStatus.SC_OK == httpCode) {
                 return CheckJobResult.Ok;
-            } else if (HttpStatus.SC_FORBIDDEN == httpCode) {
+            } else if (HttpStatus.SC_FORBIDDEN == httpCode || HttpStatus.SC_UNAUTHORIZED == httpCode) {
                 return CheckJobResult.Forbidden;
             } else if (HttpStatus.SC_NOT_FOUND == httpCode) {
                 return CheckJobResult.NotFound;
