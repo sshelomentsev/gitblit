@@ -689,6 +689,8 @@ public class EditRepositoryPage extends RootSubPage {
 		form.add(new PasswordOption("jenkinsApiToken", getString("gb.jenkinsApiToken"),
 									getString("gb.jenkinsApiTokenDescription"), "span6",
 									new PropertyModel<String>(repositoryModel, "jenkinsApiToken")));
+
+		// components for testing the connection
 		form.add(jenkinsCheckConfigurationResult); // empty for now
 		form.add(new AjaxSubmitLink(JENKINS_CHECK_CONFIGURATION_BUTTON_WICKET_ID) {
 			@Override
@@ -700,38 +702,42 @@ public class EditRepositoryPage extends RootSubPage {
 					String jenkinsApiToken = ((PasswordTextField) f.get("jenkinsApiToken:text")).getInput();
 					String jenkinsJob = ((TextField) f.get("Jobname:text")).getInput();
 					if (!StringUtils.isEmpty(jenkinsUrl) && !StringUtils.isEmpty(jenkinsJob)) {
-						JenkinsHttpGate gate = new JenkinsHttpGate(jenkinsUrl, jenkinsUsername, jenkinsApiToken, jenkinsJob);
-						//TODO text i18n
+						JenkinsHttpGate gate = new JenkinsHttpGate(jenkinsUrl, jenkinsUsername, jenkinsApiToken,
+																   jenkinsJob);
 						String resultHtml;
 						try {
 							CheckJobResult result = gate.checkJob();
 							switch (result) {
 								case Ok:
-									resultHtml = "<span style=\"color: #007F00\">Configuration is correct</span>";
+									resultHtml = "<span style=\"color: #007F00\">" +
+											getString("gb.jenkinsCorrectConfiguration") + "</span>";
 									break;
 								case Forbidden:
-									resultHtml = "<span style=\"color: #FF0000\">Access denied; wrong username or password?</span>";
+									resultHtml = "<span style=\"color: #FF0000\">" +
+											getString("gb.jenkinsAccessDenied") + "</span>";
 									break;
 								case NotFound:
-									resultHtml = "<span style=\"color: #FF0000\">Job not found</span>";
+									resultHtml = "<span style=\"color: #FF0000\">" +
+											getString("gb.jenkinsJobNotFound") + "</span>";
 									break;
 								default:
 									//should never happen; means that CheckJobResult is updated and this method isn't.
-									resultHtml = null;
+									throw new NoSuchElementException("Cannot handle check job result: " + result);
 							}
 						} catch (JenkinsException ignore) {
-							resultHtml = "<span style=\"color: #FF0000\">Cannot check the configuration; wrong URL?</span>";
+							resultHtml = "<span style=\"color: #FF0000\">" +
+									getString("gb.jenkinsCannotCheckConfiguration") + "</span>";
 						}
-
 						resultLabel = new Label(JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID, resultHtml);
 					}
 					else {
-						resultLabel = new Label(JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID, "Jenkins URL and job name are required to test connection");
+						resultLabel = new Label(JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID,
+												getString("gb.jenkinsUrlAndJobRequired"));
 					}
 				} catch (RuntimeException e) {
 					logger().warn("Exception while testing connection with Jenkins", e);
 					resultLabel = new Label(JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID,
-											"Cannot perform operation due to internal error");
+											getString("gb.jenkinsInternalError"));
 				}
 				resultLabel.setEscapeModelStrings(false);
 				form.replace(resultLabel);
