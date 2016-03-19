@@ -138,6 +138,8 @@ public final class JenkinsHttpGate implements AutoCloseable
                         "Bad request; job: %s, commits: %s", jobName, commits.toString()));
             } else if (HttpStatus.SC_INTERNAL_SERVER_ERROR == httpCode) {
                 throw new JenkinsException("Internal Jenkins server error");
+            } else if (HttpStatus.SC_NOT_FOUND == httpCode) {
+                throw new JenkinsException("Not found; job: " + jobName);
             } else {
                 throw new JenkinsException("Unknown HTTP status code in the response: " + httpCode);
             }
