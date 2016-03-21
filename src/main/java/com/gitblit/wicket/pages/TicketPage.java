@@ -847,7 +847,7 @@ public class TicketPage extends RepositoryPage {
 
 			// build status column should be hidden if CI integration is disabled. Now only Jenkins is supported
 			if (ciIntegrationEnabled) {
-				patchsetFrag.add(new Label("buildStatusColumnHeader", getString("gb.buildStatus")));
+				patchsetFrag.add(new Label("buildStatusColumnHeader", getString("gb.ciStatus")));
 			} else {
 				patchsetFrag.add(new EmptyPanel("buildStatusColumnHeader").setVisible(false));
 			}
