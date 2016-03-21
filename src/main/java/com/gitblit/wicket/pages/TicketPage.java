@@ -1796,8 +1796,14 @@ public class TicketPage extends RepositoryPage {
 					// commits should be sorted by date from latest to earliest
 					break;
 				}
-				if (StringUtils.isEmpty(getNoteForCommit(commit))) {
+				String note = getNoteForCommit(commit);
+				if (StringUtils.isEmpty(note)) {
 					commitsToCheckBuildStatus.add(commit);
+				} else {
+					CIScore ciScore = JenkinsGitNoteUtils.readCiBuildStatus(note);
+					if (ciScore == CIScore.in_progress) {
+						commitsToCheckBuildStatus.add(commit);
+					}
 				}
 			}
 			logger.info("Requesting " + commitsToCheckBuildStatus.size() + " commit statuses");
