@@ -880,7 +880,8 @@ public class TicketPage extends RepositoryPage {
 							if (ciScore != null) {
 								String buildStatusDesc = getCIScoreDescription(ciScore);
 								String buildUrl = JenkinsGitNoteUtils.readCiJobUrl(note);
-								item.add(new LinkPanel("buildStatus", "link", buildStatusDesc, buildUrl));
+								item.add(new LinkPanel("buildStatus", "link", buildStatusDesc, buildUrl,
+													   buildUrl != null)); // new tab if there's Jenkins link
 
 								String ciScoreCssClass = getCIScoreClass(ciScore);
 								buildStatusIcon = new EmptyPanel("buildStatusIcon");
@@ -1071,7 +1072,8 @@ public class TicketPage extends RepositoryPage {
 		if (ciIntegrationEnabled) {
 			ticketBuildStatusPanel = new Fragment(ticketBuildStatusPanelName, "ticketBuildStatusFragment", this);
 			ticketBuildStatusPanel.add(new LinkPanel("ticketBuildStatus", null,
-													 ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl));
+													 ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl,
+													 ciScoreInfo.ciBuildUrl != null)); // new tab if there's Jenkins link
 			EmptyPanel icon = new EmptyPanel("ticketBuildStatusIcon");
 			WicketUtils.addCssClass(icon, ciScoreInfo.ciScoreCssClass);
 			ticketBuildStatusPanel.add(icon);
@@ -1353,7 +1355,8 @@ public class TicketPage extends RepositoryPage {
 		WebMarkupContainer approvalsPanel;
 		if (ciScoreInfo.ciScoreDesc != null) {
 			approvalsPanel = new Fragment(approvalsPanelName, "approvalsFragment", this);
-			approvalsPanel.add(new LinkPanel("approvals", null, ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl));
+			approvalsPanel.add(new LinkPanel("approvals", null, ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl,
+											 ciScoreInfo.ciBuildUrl != null)); // new tab if there's Jenkins link
 			EmptyPanel icon = new EmptyPanel("approvalsIcon");
 			WicketUtils.addCssClass(icon, ciScoreInfo.ciScoreCssClass);
 			approvalsPanel.add(icon);
