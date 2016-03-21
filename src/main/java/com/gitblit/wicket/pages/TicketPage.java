@@ -1896,8 +1896,14 @@ public class TicketPage extends RepositoryPage {
 
 				// CI build status at 'Discussion' tab
 				if (ticketBuildStatusPanel != null) {
-					ticketBuildStatusPanel.replaceWith(createTicketBuildStatusPanel(ciIntegrationEnabled, ciScoreInfo));
-					target.addComponent(ticketBuildStatusPanel);
+					// For some reason it's impossible to replace ticketBuildStatusPanel here (maybe Wicket bug).
+					// Have to use Javascript to do it.
+					String newBuildStatusHtml = String.format("<i class=\"%s\"></i><a href=\"%s\">%s</a>",
+															  ciScoreInfo.ciScoreCssClass, ciScoreInfo.ciBuildUrl,
+															  ciScoreInfo.ciScoreDesc);
+					newBuildStatusHtml = "<span>" + newBuildStatusHtml + "</span>";
+					target.appendJavascript("$(\"#ticketBuildStatusRow td\")" +
+													".replaceWith('" + newBuildStatusHtml + "');");
 				}
 
 				// CI Approvals panel at 'Commits' tab
@@ -1950,6 +1956,16 @@ public class TicketPage extends RepositoryPage {
 				ciBuildUrl = null;
 				ciScoreCssClass = null;
 			}
+		}
+
+
+		@Override
+		public String toString() {
+			return "CiScoreInfo{" +
+					"ciScoreDesc='" + ciScoreDesc + '\'' +
+					", ciBuildUrl='" + ciBuildUrl + '\'' +
+					", ciScoreCssClass='" + ciScoreCssClass + '\'' +
+					'}';
 		}
 	}
 }
