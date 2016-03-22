@@ -935,6 +935,7 @@ public class TicketPage extends RepositoryPage {
 						// this commit caused build invocation
 						Change ciEvent = new Change(commit.getAuthorIdent().getName(), buildInvocationTime);
 						ciEvent.buildInvocation = new TicketModel.CiBuildInvocation(commit.getName());
+						ciEvent.buildInvocation.setJobName(getRepositoryModel().jobname);
 						String jobUrl = JenkinsGitNoteUtils.readCiJobUrl(noteForCommit);
 						if (!StringUtils.isEmpty(jobUrl)) {
 							ciEvent.buildInvocation.setJobUrl(jobUrl);
