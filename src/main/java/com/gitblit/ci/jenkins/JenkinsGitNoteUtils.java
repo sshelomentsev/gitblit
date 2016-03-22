@@ -1,6 +1,7 @@
 package com.gitblit.ci.jenkins;
 
 import com.gitblit.models.TicketModel;
+import com.gitblit.utils.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -60,6 +61,23 @@ public final class JenkinsGitNoteUtils {
 
         private GitNoteBuilder() {
             note = new JSONObject();
+        }
+
+        /**
+         * GitNoteBuilder based on already existing git note.
+         * @param note already existing git note.
+         * @throws IllegalArgumentException if given note is not empty and is not a valid JSON.
+         */
+        private GitNoteBuilder(String note) {
+            if (StringUtils.isEmpty(note)) {
+                this.note = new JSONObject();
+            } else {
+                try {
+                    this.note = new JSONObject(note);
+                } catch (JSONException e) {
+                    throw new IllegalArgumentException(e);
+                }
+            }
         }
 
         public GitNoteBuilder addCiBuildStatus(TicketModel.CIScore buildStatus) {
