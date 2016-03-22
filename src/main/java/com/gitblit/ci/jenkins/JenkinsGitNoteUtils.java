@@ -4,6 +4,7 @@ import com.gitblit.models.TicketModel;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Date;
 import java.util.NoSuchElementException;
 
 /**
@@ -14,6 +15,7 @@ import java.util.NoSuchElementException;
 public final class JenkinsGitNoteUtils {
     private static final String CI_STATUS = "ciStatus";
     private static final String CI_JOB_URL = "ciJobUrl";
+    private static final String CI_BUILD_INVOCATION_TIME = "ciBuildInvocationTime";
 
     private JenkinsGitNoteUtils() { }
 
@@ -43,6 +45,16 @@ public final class JenkinsGitNoteUtils {
         }
     }
 
+    public Date getCiBuildInvocationTime(String note) {
+        try {
+            JSONObject noteJsonObject = new JSONObject(note);
+            long ts = (long) noteJsonObject.get(CI_BUILD_INVOCATION_TIME);
+            return new Date(ts);
+        } catch (ClassCastException | JSONException ignore) {
+            return null;
+        }
+    }
+
     public static class GitNoteBuilder {
         private final JSONObject note;
 
@@ -57,6 +69,11 @@ public final class JenkinsGitNoteUtils {
 
         public GitNoteBuilder addCiJobUrl(String ciJobUrl) {
             note.put(CI_JOB_URL, ciJobUrl);
+            return this;
+        }
+
+        public GitNoteBuilder addBuildInvocationTime(Date time) {
+            note.put(CI_BUILD_INVOCATION_TIME, time.getTime());
             return this;
         }
 
