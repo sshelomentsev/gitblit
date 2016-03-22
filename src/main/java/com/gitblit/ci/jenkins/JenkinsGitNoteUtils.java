@@ -45,7 +45,7 @@ public final class JenkinsGitNoteUtils {
         }
     }
 
-    public Date getCiBuildInvocationTime(String note) {
+    public static Date getCiBuildInvocationTime(String note) {
         try {
             JSONObject noteJsonObject = new JSONObject(note);
             long ts = (long) noteJsonObject.get(CI_BUILD_INVOCATION_TIME);
