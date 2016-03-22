@@ -783,6 +783,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		public Set<Attachment> attachments;
 		public Patchset patchset;
 		public Review review;
+		public CiBuildInvocation buildInvocation;
 		public CiVerification verification;
 		private transient String id;
 
@@ -819,6 +820,8 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		public boolean hasVerification() {
 			return null != verification;
 		}
+
+		public boolean hasCiBuildInvocation() { return null != buildInvocation; }
 
 		public boolean hasComment() {
 			return comment != null && !comment.isDeleted() && comment.text != null;
@@ -1195,11 +1198,9 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	}
 
 	public static class CiVerification implements Serializable {
-
 		private static final long serialVersionUID = 1L;
 
 		public CIScore score;
-
 		public String jobUrl = "";
 
 		public CiVerification(CIScore score) {
@@ -1222,6 +1223,43 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 			return s;
 		}
 
+	}
+
+	public static class CiBuildInvocation {
+		private static final long serialVersionUID = 1L;
+
+		private String jobName;
+		private String jobUrl;
+		private final String commitSha1;
+
+		public CiBuildInvocation(String sha1) {
+			commitSha1 = sha1;
+		}
+
+		public String getJobName() {
+			return jobName;
+		}
+
+		public void setJobName(String jobName) {
+			this.jobName = jobName;
+		}
+
+		public String getJobUrl() {
+			return jobUrl;
+		}
+
+		public void setJobUrl(String jobUrl) {
+			this.jobUrl = jobUrl;
+		}
+
+		@Override
+		public String toString() {
+			return "CiBuildInvocation{" +
+					"jobName='" + jobName + '\'' +
+					", jobUrl='" + jobUrl + '\'' +
+					", commitSha1='" + commitSha1 + '\'' +
+					'}';
+		}
 	}
 
 	public enum Score {
