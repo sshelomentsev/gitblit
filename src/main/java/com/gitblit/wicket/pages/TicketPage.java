@@ -783,6 +783,7 @@ public class TicketPage extends RepositoryPage {
 		}
 
 
+		List<RevCommit> commits = null; // used in patchset tab and in order to dynamically created changes with CI info
 		/*
 		 *  PATCHSET TAB
 		 */
@@ -853,7 +854,7 @@ public class TicketPage extends RepositoryPage {
 			}
 
 
-			List<RevCommit> commits = JGitUtils.getRevLog(getRepository(), currentPatchset.base, currentPatchset.tip);
+			commits = JGitUtils.getRevLog(getRepository(), currentPatchset.base, currentPatchset.tip);
 			ListDataProvider<RevCommit> commitsDp = new ListDataProvider<RevCommit>(commits);
 			DataView<RevCommit> commitsView = new DataView<RevCommit>("commit", commitsDp) {
 				private static final long serialVersionUID = 1L;
@@ -921,6 +922,30 @@ public class TicketPage extends RepositoryPage {
 		 */
 		Fragment revisionHistory = new Fragment("activity", "activityFragment", this);
 		List<Change> events = new ArrayList<Change>(ticket.changes);
+
+		// create 'synthetic' CI build invocation events if necessary
+		if (commits != null) {
+			List<Change> ciEvents = new ArrayList<>();
+			for (RevCommit commit : commits) {
+				String noteForCommit = getNoteForCommit(commit);
+				if (noteForCommit != null) {
+					//TODO need to write time to commit's git note when invoking jenkins_verification
+					Date buildInvocationTime = JenkinsGitNoteUtils.getCiBuildInvocationTime(noteForCommit);
+					if (buildInvocationTime != null) {
+						// this commit caused build invocation
+						Change ciEvent = new Change(commit.getAuthorIdent().getName(), buildInvocationTime);
+						ciEvent.buildInvocation = new TicketModel.CiBuildInvocation(commit.getName());
+						String jobUrl = JenkinsGitNoteUtils.readCiJobUrl(noteForCommit);
+						if (!StringUtils.isEmpty(jobUrl)) {
+							ciEvent.buildInvocation.setJobUrl(jobUrl);
+						}
+						ciEvents.add(ciEvent);
+					}
+				}
+			}
+			events.addAll(ciEvents);
+		}
+
 		Collections.sort(events);
 		Collections.reverse(events);
 		ListDataProvider<Change> eventsDp = new ListDataProvider<Change>(events);
@@ -990,6 +1015,20 @@ public class TicketPage extends RepositoryPage {
 					item.add(new Label("patchsetRevision").setVisible(false));
 					item.add(new Label("patchsetType").setVisible(false));
 					item.add(new Label("patchsetDiffStat").setVisible(false));
+				} else if (event.hasCiBuildInvocation()) {
+					// CI build invocation
+					item.add(new Label("patchsetRevision").setVisible(false));
+					item.add(new Label("patchsetType").setVisible(false));
+					item.add(new Label("patchsetDiffStat").setVisible(false));
+
+					String jobName = app().xssFilter().relaxed(event.buildInvocation.getJobName());
+					String what = "Jenkins job build invoked: " + jobName;
+					String jobUrl = event.buildInvocation.getJobUrl();
+					if (!StringUtils.isEmpty(jobUrl)) {
+						what = "<a href=\"" + app().xssFilter().relaxed(jobUrl) + "\">" + what + "</a>";
+					}
+					Label whatLabel = new Label("what", what);
+					whatLabel.setEscapeModelStrings(false); // echo raw HTML markup
 				} else {
 					// field change
 					item.add(new Label("patchsetRevision").setVisible(false));
