@@ -1,3 +1,4 @@
+import com.gitblit.ci.jenkins.JenkinsGitNoteUtils
 import com.gitblit.utils.JGitUtils
 import com.gitblit.utils.RefNameUtils
 import com.gitblit.utils.StringUtils
@@ -39,6 +40,16 @@ if (repository.enableCI) {
 		URI uri = URI.create(uriStr)
 		try {
 			sendRequest(uri)
+			// now need to add information about Jenkins build invocation into the git note of this commit
+
+			String note = JenkinsGitNoteUtils.createNoteBuilder().addBuildInvocationTime(new Date()).build()
+			boolean added = JGitUtils.addNote(receivePack.getRepository(), refNameWithLastCommit.value, note)
+			if (added) {
+				logger.info("note added to ${refNameWithLastCommit.value} commit after Jenkins build invocation")
+			} else {
+				logger.warn(
+						"cannot add note to ${refNameWithLastCommit.value} commit after Jenkins build invocation")
+			}
 		} catch (IOException e) {
 			logger.warn("I/O exception while processing request to URI: ${uri}", e)
 		}
