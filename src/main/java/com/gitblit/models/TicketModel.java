@@ -774,25 +774,16 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	 * Encapsulates a ticket change
 	 */
 	public static class Change implements Serializable, Comparable<Change> {
-
 		private static final long serialVersionUID = 1L;
 
 		public final Date date;
-
 		public final String author;
-
 		public Comment comment;
-
 		public Map<Field, String> fields;
-
 		public Set<Attachment> attachments;
-
 		public Patchset patchset;
-
 		public Review review;
-
 		public CiVerification verification;
-
 		private transient String id;
 
 		public Change(String author) {
