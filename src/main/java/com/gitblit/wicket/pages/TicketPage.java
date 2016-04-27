@@ -1578,11 +1578,11 @@ public class TicketPage extends RepositoryPage {
 			return new Label("mergePanel");
 		}
 
-		boolean ciBuildSuccessful = CIScore.success == ticket.getTicketCiBuildStatus();
+		boolean ciApproval = !repository.enableCI || CIScore.success == ticket.getTicketCiBuildStatus();
 		boolean allowMerge;
 		if (repository.requireApproval) {
 			// rpeository requires approval
-			allowMerge = ticket.isOpen() && ticket.isApproved(patchset) && ciBuildSuccessful;
+			allowMerge = ticket.isOpen() && ticket.isApproved(patchset) && ciApproval;
 		} else {
 			// vetos are binding
 			allowMerge = ticket.isOpen() && !ticket.isVetoed(patchset);
@@ -1651,6 +1651,7 @@ public class TicketPage extends RepositoryPage {
 					};
 					mergePanel.add(mergeButton);
 					Component instructions = getMergeInstructions(user, repository, "reviewMergeMore", "gb.patchsetMergeableMore");
+
 					mergePanel.add(new Label("ciMergeMore").setVisible(false));
 					mergePanel.add(instructions);
 				} else {
@@ -1678,10 +1679,9 @@ public class TicketPage extends RepositoryPage {
 					// user can merge locally
 					Component instructions = getMergeInstructions(user, repository, "mergeMore", "gb.patchsetNotMergeableMore");
 					mergePanel.add(instructions);
-				} else {
-					mergePanel.add(new Label("reviewMergeMore").setVisible(false));
-					mergePanel.add(new Label("ciMergeMore").setVisible(false));
 				}
+				mergePanel.add(new Label("reviewMergeMore").setVisible(false));
+				mergePanel.add(new Label("ciMergeMore").setVisible(false));
 				return mergePanel;
 			}
 		} else {
@@ -1695,7 +1695,7 @@ public class TicketPage extends RepositoryPage {
 				// patchset has been vetoed
 				Fragment mergePanel =  new Fragment("mergePanel", "vetoedFragment", this);
 				mergePanel.add(new Label("mergeTitle", MessageFormat.format(getString("gb.patchsetNotMergeable"), ticket.mergeTo)));
-				if (!ciBuildSuccessful) {
+				if (!ciApproval) {
 					mergePanel.add(new Label("ciMergeMore", MessageFormat.format(getString("gb.ciBuildStatusIsNotSuccessMore"), ticket.mergeTo)));
 				} else {
 					mergePanel.add(new Label("ciMergeMore").setVisible(false));
@@ -1709,7 +1709,7 @@ public class TicketPage extends RepositoryPage {
 				} else {
 					mergePanel.add(new Label("reviewMergeMore").setVisible(false));
 				}
-				if (ciIntegrationEnabled && !ciBuildSuccessful) {
+				if (ciIntegrationEnabled && !ciApproval) {
 					mergePanel.add(new Label("ciMergeMore", MessageFormat.format(getString("gb.ciBuildStatusIsNotSuccessMore"), ticket.mergeTo)));
 				} else {
 					mergePanel.add(new Label("ciMergeMore").setVisible(false));

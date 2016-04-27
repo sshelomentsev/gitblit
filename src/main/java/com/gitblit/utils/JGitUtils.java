@@ -1012,7 +1012,6 @@ public class JGitUtils {
 					long size = 0;
 					FilestoreModel filestoreItem = null;
 					ObjectId objectId = tw.getObjectId(0);
-					
 					try {
 						if (!tw.isSubtree() && (tw.getFileMode(0) != FileMode.GITLINK)) {
 
@@ -1025,7 +1024,7 @@ public class JGitUtils {
 					} catch (Throwable t) {
 						error(t, null, "failed to retrieve blob size for " + tw.getPathString());
 					}
-					
+
 					list.add(new PathChangeModel(tw.getPathString(), tw.getPathString(),filestoreItem, size, tw
 							.getRawMode(0), objectId.getName(), commit.getId().getName(),
 							ChangeType.ADD));
@@ -1041,7 +1040,7 @@ public class JGitUtils {
 				for (DiffEntry diff : diffs) {
 					// create the path change model
 					PathChangeModel pcm = PathChangeModel.from(diff, commit.getName(), repository);
-						
+
 						if (calculateDiffStat) {
 						// update file diffstats
 						df.format(diff);
@@ -1200,7 +1199,7 @@ public class JGitUtils {
 	private static PathModel getPathModel(TreeWalk tw, String basePath, RevCommit commit) {
 		String name;
 		long size = 0;
-		
+
 		if (StringUtils.isEmpty(basePath)) {
 			name = tw.getPathString();
 		} else {
@@ -1208,7 +1207,7 @@ public class JGitUtils {
 		}
 		ObjectId objectId = tw.getObjectId(0);
 		FilestoreModel filestoreItem = null;
-		
+
 		try {
 			if (!tw.isSubtree() && (tw.getFileMode(0) != FileMode.GITLINK)) {
 
@@ -1224,21 +1223,21 @@ public class JGitUtils {
 		return new PathModel(name, tw.getPathString(), filestoreItem, size, tw.getFileMode(0).getBits(),
 				objectId.getName(), commit.getName());
 	}
-	
+
 	public static boolean isPossibleFilestoreItem(long size) {
-		return (   (size >= com.gitblit.Constants.LEN_FILESTORE_META_MIN) 
+		return (   (size >= com.gitblit.Constants.LEN_FILESTORE_META_MIN)
 				&& (size <= com.gitblit.Constants.LEN_FILESTORE_META_MAX));
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @return Representative FilestoreModel if valid, otherwise null
 	 */
 	public static FilestoreModel getFilestoreItem(ObjectLoader obj){
 		try {
 			final byte[] blob = obj.getCachedBytes(com.gitblit.Constants.LEN_FILESTORE_META_MAX);
 			final String meta = new String(blob, "UTF-8");
-		
+
 			return FilestoreModel.fromMetaString(meta);
 
 		} catch (LargeObjectException e) {
@@ -1246,7 +1245,7 @@ public class JGitUtils {
 		} catch (Exception e) {
 			error(e, null, "failed to retrieve filestoreItem " + obj.toString());
 		}
-		
+
 		return null;
 	}
 
@@ -1270,9 +1269,9 @@ public class JGitUtils {
 		if (!tw.isSubtree() && (tw.getFileMode(0) != FileMode.GITLINK)) {
 
 			pathString = PathUtils.getLastPathComponent(pathString);
-			
+
 			size = tw.getObjectReader().getObjectSize(tw.getObjectId(0), Constants.OBJ_BLOB);
-			
+
 			if (isPossibleFilestoreItem(size)) {
 				filestoreItem = getFilestoreItem(tw.getObjectReader().open(tw.getObjectId(0)));
 			}
@@ -2628,11 +2627,11 @@ public class JGitUtils {
 		}
 		return new MergeResult(MergeStatus.FAILED, null);
 	}
-	
-	
+
+
 	/**
-	 * Returns the LFS URL for the given oid 
-	 * Currently assumes that the Gitblit Filestore is used 
+	 * Returns the LFS URL for the given oid
+	 * Currently assumes that the Gitblit Filestore is used
 	 *
 	 * @param baseURL
 	 * @param repository name
@@ -2640,18 +2639,18 @@ public class JGitUtils {
 	 * @return the lfs item URL
 	 */
 	public static String getLfsRepositoryUrl(String baseURL, String repositoryName, String oid) {
-		
+
 		if (baseURL.length() > 0 && baseURL.charAt(baseURL.length() - 1) == '/') {
 			baseURL = baseURL.substring(0, baseURL.length() - 1);
 		}
-		
-		return baseURL + com.gitblit.Constants.R_PATH 
-					   + repositoryName + "/" 
-					   + com.gitblit.Constants.R_LFS 
+
+		return baseURL + com.gitblit.Constants.R_PATH
+					   + repositoryName + "/"
+					   + com.gitblit.Constants.R_LFS
 					   + "objects/" + oid;
-		
+
 	}
-	
+
 	/**
 	 * Returns all tree entries that do not match the ignore paths.
 	 *
@@ -2696,7 +2695,7 @@ public class JGitUtils {
 		}
 		return list;
 	}
-	
+
 	public static boolean commitIndex(Repository db, String branch, DirCache index,
 									  ObjectId parentId, boolean forceCommit,
 									  String author, String authorEmail, String message) throws IOException, ConcurrentRefUpdateException {
@@ -2705,7 +2704,7 @@ public class JGitUtils {
 		ObjectId headId = db.resolve(branch + "^{commit}");
 		ObjectId baseId = parentId;
 		if (baseId == null || headId == null) { return false; }
-		
+
 		ObjectInserter odi = db.newObjectInserter();
 		try {
 			// Create the in-memory index of the new/updated ticket
@@ -2713,21 +2712,21 @@ public class JGitUtils {
 
 			// Create a commit object
 			PersonIdent ident = new PersonIdent(author, authorEmail);
-			
+
 			if (forceCommit == false) {
 				ThreeWayMerger merger = MergeStrategy.RECURSIVE.newMerger(db, true);
 				merger.setObjectInserter(odi);
 				merger.setBase(baseId);
 				boolean mergeSuccess = merger.merge(indexTreeId, headId);
-				
+
 				if (mergeSuccess) {
 					indexTreeId = merger.getResultTreeId();
 				 } else {
 					//Manual merge required
-					return false; 
+					return false;
 				 }
 			}
-			
+
 			CommitBuilder commit = new CommitBuilder();
 			commit.setAuthor(ident);
 			commit.setCommitter(ident);
@@ -2773,7 +2772,7 @@ public class JGitUtils {
 		}
 		return success;
 	}
-	
+
 	/**
 	 * Returns true if the commit identified by commitId is at the tip of it's branch.
 	 *
@@ -2784,7 +2783,7 @@ public class JGitUtils {
 	public static boolean isTip(Repository repository, String commitId) {
 		try {
 			RefModel tip = getBranch(repository, commitId);
-			return (tip != null);	
+			return (tip != null);
 		} catch (Exception e) {
 			LOGGER.error("Failed to determine isTip", e);
 		}
