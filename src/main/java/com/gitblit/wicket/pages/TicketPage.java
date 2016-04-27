@@ -46,9 +46,11 @@ import com.gitblit.tickets.TicketLabel;
 import com.gitblit.tickets.TicketMilestone;
 import com.gitblit.tickets.TicketResponsible;
 import com.gitblit.utils.ArrayUtils;
+import com.gitblit.utils.CommitCache;
 import com.gitblit.utils.JGitUtils;
 import com.gitblit.utils.JGitUtils.MergeStatus;
 import com.gitblit.utils.MarkdownUtils;
+import com.gitblit.utils.RefLogUtils;
 import com.gitblit.utils.RefNameUtils;
 import com.gitblit.utils.StringUtils;
 import com.gitblit.utils.TimeUtils;
@@ -56,6 +58,7 @@ import com.gitblit.wicket.GitBlitWebSession;
 import com.gitblit.wicket.TicketsUI;
 import com.gitblit.wicket.WicketUtils;
 import com.gitblit.wicket.panels.AvatarImage;
+import com.gitblit.wicket.panels.BasePanel.JavascriptEventConfirmation;
 import com.gitblit.wicket.panels.BasePanel.JavascriptTextPrompt;
 import com.gitblit.wicket.panels.CommentPanel;
 import com.gitblit.wicket.panels.DiffStatPanel;
@@ -77,12 +80,15 @@ import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.image.ContextImage;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.link.ExternalLink;
+import org.apache.wicket.markup.html.link.Link;
+import org.apache.wicket.markup.html.pages.RedirectPage;
 import org.apache.wicket.markup.html.panel.EmptyPanel;
 import org.apache.wicket.markup.html.panel.Fragment;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.markup.repeater.data.ListDataProvider;
 import org.apache.wicket.model.Model;
+import org.apache.wicket.protocol.http.RequestUtils;
 import org.apache.wicket.protocol.http.WebRequest;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -91,6 +97,7 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
@@ -962,6 +969,9 @@ public class TicketPage extends RepositoryPage {
 				if (event.hasPatchset()) {
 					// patchset
 					Patchset patchset = event.patchset;
+					//In the case of using a cached change list
+					item.setVisible(!patchset.isDeleted());
+
 					String what;
 					if (event.isStatusChange() && (Status.New == event.getStatus())) {
 						what = getString("gb.proposedThisChange");
@@ -989,6 +999,14 @@ public class TicketPage extends RepositoryPage {
 					}
 					item.add(typeLabel);
 
+					Link<Void> deleteLink = createDeletePatchsetLink(repository, patchset);
+
+					if (user.canDeleteRef(repository)) {
+						item.add(deleteLink.setVisible(patchset.canDelete));
+					} else {
+						item.add(deleteLink.setVisible(false));
+					}
+
 					// show commit diffstat
 					item.add(new DiffStatPanel("patchsetDiffStat", patchset.insertions, patchset.deletions, patchset.rev > 1));
 				} else if (event.hasComment()) {
@@ -996,6 +1014,7 @@ public class TicketPage extends RepositoryPage {
 					item.add(new Label("what", getString("gb.commented")));
 					item.add(new Label("patchsetRevision").setVisible(false));
 					item.add(new Label("patchsetType").setVisible(false));
+					item.add(new Label("deleteRevision").setVisible(false));
 					item.add(new Label("patchsetDiffStat").setVisible(false));
 				} else if (event.hasReview()) {
 					// review
@@ -1015,6 +1034,7 @@ public class TicketPage extends RepositoryPage {
 							.setEscapeModelStrings(false));
 					item.add(new Label("patchsetRevision").setVisible(false));
 					item.add(new Label("patchsetType").setVisible(false));
+					item.add(new Label("deleteRevision").setVisible(false));
 					item.add(new Label("patchsetDiffStat").setVisible(false));
 				} else if (event.hasCiBuildInvocation()) {
 					// CI build invocation
@@ -1034,6 +1054,7 @@ public class TicketPage extends RepositoryPage {
 					// field change
 					item.add(new Label("patchsetRevision").setVisible(false));
 					item.add(new Label("patchsetType").setVisible(false));
+					item.add(new Label("deleteRevision").setVisible(false));
 					item.add(new Label("patchsetDiffStat").setVisible(false));
 
 					String what = "";
@@ -2008,4 +2029,85 @@ public class TicketPage extends RepositoryPage {
 					'}';
 		}
 	}
+
+	private Link<Void> createDeletePatchsetLink(final RepositoryModel repositoryModel, final Patchset patchset)
+	{
+		Link<Void> deleteLink = new Link<Void>("deleteRevision") {
+			private static final long serialVersionUID = 1L;
+
+			@Override
+			public void onClick() {
+				Repository r = app().repositories().getRepository(repositoryModel.name);
+				UserModel user = GitBlitWebSession.get().getUser();
+
+				if (r == null) {
+					if (app().repositories().isCollectingGarbage(repositoryModel.name)) {
+						error(MessageFormat.format(getString("gb.busyCollectingGarbage"), repositoryModel.name));
+					} else {
+						error(MessageFormat.format("Failed to find repository {0}", repositoryModel.name));
+					}
+					return;
+				}
+
+				//Construct the ref name based on the patchset
+				String ticketShard = String.format("%02d", ticket.number);
+				ticketShard = ticketShard.substring(ticketShard.length() - 2);
+				final String refName = String.format("%s%s/%d/%d", Constants.R_TICKETS_PATCHSETS, ticketShard, ticket.number, patchset.number);
+
+				Ref ref = null;
+				boolean success = true;
+
+				try {
+					ref = r.getRef(refName);
+
+					if (ref != null) {
+						success = JGitUtils.deleteBranchRef(r, ref.getName());
+					} else {
+						success = false;
+					}
+
+					if (success) {
+						// clear commit cache
+						CommitCache.instance().clear(repositoryModel.name, refName);
+
+						// optionally update reflog
+						if (RefLogUtils.hasRefLogBranch(r)) {
+							RefLogUtils.deleteRef(user, r, ref);
+						}
+
+						TicketModel updatedTicket = app().tickets().deletePatchset(ticket, patchset, user.username);
+
+						if (updatedTicket == null) {
+							success = false;
+						}
+					}
+				} catch (IOException e) {
+					logger().error("failed to determine ticket from ref", e);
+					success = false;
+				} finally {
+					r.close();
+				}
+
+				if (success) {
+					getSession().info(MessageFormat.format(getString("gb.deletePatchsetSuccess"), patchset.number));
+					logger().info(MessageFormat.format("{0} deleted patchset {1} from ticket {2}",
+							user.username, patchset.number, ticket.number));
+				} else {
+					getSession().error(MessageFormat.format(getString("gb.deletePatchsetFailure"),patchset.number));
+				}
+
+				//Force reload of the page to rebuild ticket change cache
+				String relativeUrl = urlFor(TicketsPage.class, getPageParameters()).toString();
+				String absoluteUrl = RequestUtils.toAbsolutePath(relativeUrl);
+				setResponsePage(new RedirectPage(absoluteUrl));
+			}
+		};
+
+		WicketUtils.setHtmlTooltip(deleteLink, MessageFormat.format(getString("gb.deletePatchset"), patchset.number));
+
+		deleteLink.add(new JavascriptEventConfirmation("onclick", MessageFormat.format(getString("gb.deletePatchset"), patchset.number)));
+
+		return deleteLink;
+	}
+
 }

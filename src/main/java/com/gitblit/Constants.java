@@ -94,6 +94,10 @@ public class Constants {
 	public static final int LEN_SHORTLOG = 78;
 
 	public static final int LEN_SHORTLOG_REFS = 60;
+	
+	public static final int LEN_FILESTORE_META_MIN = 125;
+	
+	public static final int LEN_FILESTORE_META_MAX = 146;
 
 	public static final String DEFAULT_BRANCH = "default";
 
@@ -581,7 +585,7 @@ public class Constants {
 	}
 
 	public static enum AuthenticationType {
-		PUBLIC_KEY, CREDENTIALS, COOKIE, CERTIFICATE, CONTAINER;
+		PUBLIC_KEY, CREDENTIALS, COOKIE, CERTIFICATE, CONTAINER, HTTPHEADER;
 
 		public boolean isStandard() {
 			return ordinal() <= COOKIE.ordinal();
@@ -589,7 +593,7 @@ public class Constants {
 	}
 
 	public static enum AccountType {
-		LOCAL, EXTERNAL, CONTAINER, LDAP, REDMINE, SALESFORCE, WINDOWS, PAM, HTPASSWD;
+		LOCAL, CONTAINER, LDAP, REDMINE, SALESFORCE, WINDOWS, PAM, HTPASSWD, HTTPHEADER;
 
 		public static AccountType fromString(String value) {
 			for (AccountType type : AccountType.values()) {
