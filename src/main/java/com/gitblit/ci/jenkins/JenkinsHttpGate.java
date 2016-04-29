@@ -94,12 +94,22 @@ public final class JenkinsHttpGate implements AutoCloseable
         }
         client = clientBuilder.build();
         this.localContext = localContext;
-        this.jobName = jobName;
+        this.jobName = fixJobName(jobName);
         if (host.endsWith("/")) {
             jenkinsHost = host.substring(0, host.length() - 1);
         } else {
             jenkinsHost = host;
         }
+    }
+
+    private String fixJobName(String jobName) {
+        if (jobName.endsWith("/")) {
+            jobName = jobName.substring(0, jobName.length() - 1);
+        }
+        if (jobName.startsWith("/")) {
+            jobName = jobName.substring(1, jobName.length());
+        }
+        return jobName.replace("/", "/job/"); // support for Folders plugin
     }
 
     public List<BuildInfo> getCommitBuildStatuses(List<String> commits)
