@@ -22,6 +22,7 @@ import com.gitblit.Keys;
 import com.gitblit.ci.jenkins.JenkinsException;
 import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
 import com.gitblit.ci.jenkins.JenkinsHttpGate;
+import com.gitblit.ci.jenkins.JenkinsVerification;
 import com.gitblit.ci.jenkins.model.BuildInfo;
 import com.gitblit.git.PatchsetCommand;
 import com.gitblit.git.PatchsetReceivePack;
@@ -73,6 +74,7 @@ import org.apache.wicket.PageParameters;
 import org.apache.wicket.RestartResponseException;
 import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
+import org.apache.wicket.ajax.markup.html.AjaxLink;
 import org.apache.wicket.behavior.SimpleAttributeModifier;
 import org.apache.wicket.markup.html.IHeaderResponse;
 import org.apache.wicket.markup.html.WebMarkupContainer;
@@ -133,6 +135,7 @@ public class TicketPage extends RepositoryPage {
 	private static final String CSS_THUMBS_O_DOWN = "fa fa-thumbs-o-down";
 	private static final String CSS_THUMBS_O_UP = "fa fa-thumbs-o-up";
 	private static final String CSS_MINUS_CIRCLE = "fa fa-minus-circle";
+	private static final String CSS_EXCLAMATION = "fa fa-exclamation";
 
 	private static final String CSS_COLOR_RED = "color-red";
 	private static final String CSS_COLOR_GREEN = "color-green";
@@ -1421,6 +1424,33 @@ public class TicketPage extends RepositoryPage {
 			EmptyPanel icon = new EmptyPanel("approvalsIcon");
 			WicketUtils.addCssClass(icon, ciScoreInfo.ciScoreCssClass);
 			approvalsPanel.add(icon);
+			boolean alreadyVerified = false;
+			if (null != ticket.getTicketCiBuildStatus()) {
+				alreadyVerified = !ticket.getTicketCiBuildStatus().equals(CIScore.not_started_yet);
+			}
+			AjaxLink<String> startLink = new AjaxLink<String>("startApproval") {
+				@Override
+				public void onClick(AjaxRequestTarget target) {
+					String refName = Constants.R_TICKET + String.valueOf(ticket.number);
+					String lastCommitSha1 = currentPatchset.tip;
+					JenkinsVerification v = new JenkinsVerification(getRepositoryModel(), getRepository(), refName,
+																	lastCommitSha1);
+				}
+			};
+			startLink.setVisible(!alreadyVerified);
+			approvalsPanel.add(startLink);
+
+			AjaxLink<String> restartLink = new AjaxLink<String>("restartApproval") {
+				@Override
+				public void onClick(AjaxRequestTarget target) {
+					String refName = Constants.R_TICKET + String.valueOf(ticket.number);
+					String lastCommitSha1 = currentPatchset.tip;
+					JenkinsVerification v = new JenkinsVerification(getRepositoryModel(), getRepository(), refName,
+																	lastCommitSha1);
+				}
+			};
+			restartLink.setVisible(alreadyVerified);
+			approvalsPanel.add(restartLink);
 		} else {
 			approvalsPanel = new WebMarkupContainer(approvalsPanelName);
 			approvalsPanel.setVisible(false);
@@ -1994,10 +2024,10 @@ public class TicketPage extends RepositoryPage {
 				} else {
 					String lastCommitNote = getNoteForCommit(JGitUtils.getCommit(getRepository(), currentPatchset.tip));
 					if (lastCommitNote == null) {
-						// there is no git note; assuming CI build is in progress
-						ciScoreDesc = getCIScoreDescription(CIScore.in_progress);
+						// there is no git note; assuming CI build has not started yet
+						ciScoreDesc = getCIScoreDescription(CIScore.not_started_yet);
 						ciBuildUrl = null;
-						ciScoreCssClass = CSS_SPINNER;
+						ciScoreCssClass = CSS_EXCLAMATION;
 					} else {
 						// have to read git note second time here
 						CIScore ticketCiBuildStatus = ticket.getTicketCiBuildStatus();
@@ -2013,9 +2043,9 @@ public class TicketPage extends RepositoryPage {
 					}
 				}
 			} else {
-				ciScoreDesc = null;
-				ciBuildUrl = null;
-				ciScoreCssClass = null;
+				ciScoreDesc = "";
+				ciBuildUrl = "";
+				ciScoreCssClass = "";
 			}
 		}
 

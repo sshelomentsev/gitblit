@@ -15,21 +15,41 @@
  */
 package com.gitblit.wicket.pages;
 
-import java.text.MessageFormat;
-import java.util.*;
-
+import com.gitblit.Constants;
+import com.gitblit.Constants.AccessRestrictionType;
+import com.gitblit.Constants.AuthorizationControl;
+import com.gitblit.Constants.CommitMessageRenderer;
+import com.gitblit.Constants.FederationStrategy;
+import com.gitblit.Constants.RegistrantType;
+import com.gitblit.GitBlitException;
+import com.gitblit.Keys;
 import com.gitblit.ci.jenkins.JenkinsException;
 import com.gitblit.ci.jenkins.JenkinsHttpGate;
+import com.gitblit.ci.jenkins.JenkinsVerification;
 import com.gitblit.ci.jenkins.model.CheckJobResult;
-import com.gitblit.wicket.panels.LinkPanel;
+import com.gitblit.models.RegistrantAccessPermission;
+import com.gitblit.models.RepositoryModel;
+import com.gitblit.models.TicketModel;
+import com.gitblit.models.UserChoice;
+import com.gitblit.models.UserModel;
+import com.gitblit.utils.ArrayUtils;
+import com.gitblit.utils.StringUtils;
+import com.gitblit.wicket.GitBlitWebSession;
+import com.gitblit.wicket.StringChoiceRenderer;
+import com.gitblit.wicket.WicketUtils;
+import com.gitblit.wicket.panels.AccessPolicyPanel;
+import com.gitblit.wicket.panels.BasePanel.JavascriptEventConfirmation;
+import com.gitblit.wicket.panels.BooleanOption;
+import com.gitblit.wicket.panels.BulletListPanel;
+import com.gitblit.wicket.panels.ChoiceOption;
 import com.gitblit.wicket.panels.PasswordOption;
+import com.gitblit.wicket.panels.RegistrantPermissionsPanel;
+import com.gitblit.wicket.panels.RepositoryNamePanel;
+import com.gitblit.wicket.panels.TextOption;
 import org.apache.wicket.Component;
 import org.apache.wicket.PageParameters;
-import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.form.AjaxFormChoiceComponentUpdatingBehavior;
-import org.apache.wicket.ajax.markup.html.AjaxFallbackLink;
-import org.apache.wicket.ajax.markup.html.form.AjaxFallbackButton;
 import org.apache.wicket.ajax.markup.html.form.AjaxSubmitLink;
 import org.apache.wicket.behavior.SimpleAttributeModifier;
 import org.apache.wicket.extensions.markup.html.form.palette.Palette;
@@ -55,37 +75,25 @@ import org.apache.wicket.model.util.CollectionModel;
 import org.apache.wicket.model.util.ListModel;
 import org.eclipse.jgit.lib.Repository;
 
-import com.gitblit.Constants;
-import com.gitblit.Constants.AccessRestrictionType;
-import com.gitblit.Constants.AuthorizationControl;
-import com.gitblit.Constants.CommitMessageRenderer;
-import com.gitblit.Constants.FederationStrategy;
-import com.gitblit.Constants.RegistrantType;
-import com.gitblit.GitBlitException;
-import com.gitblit.Keys;
-import com.gitblit.models.RegistrantAccessPermission;
-import com.gitblit.models.RepositoryModel;
-import com.gitblit.models.UserChoice;
-import com.gitblit.models.UserModel;
-import com.gitblit.utils.ArrayUtils;
-import com.gitblit.utils.StringUtils;
-import com.gitblit.wicket.GitBlitWebSession;
-import com.gitblit.wicket.StringChoiceRenderer;
-import com.gitblit.wicket.WicketUtils;
-import com.gitblit.wicket.panels.AccessPolicyPanel;
-import com.gitblit.wicket.panels.BasePanel.JavascriptEventConfirmation;
-import com.gitblit.wicket.panels.BooleanOption;
-import com.gitblit.wicket.panels.BulletListPanel;
-import com.gitblit.wicket.panels.ChoiceOption;
-import com.gitblit.wicket.panels.RegistrantPermissionsPanel;
-import com.gitblit.wicket.panels.RepositoryNamePanel;
-import com.gitblit.wicket.panels.TextOption;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Set;
 
 public class EditRepositoryPage extends RootSubPage {
 
 	private static final String JENKINS_VERIFICATION = "jenkins_verification";
 	private static final String JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID = "jenkinsCheckConfigurationResult";
 	private static final String JENKINS_CHECK_CONFIGURATION_BUTTON_WICKET_ID = "jenkinsCheckConfigurationButton";
+	private static final String JENKINS_START_VERIFICATION_BUTTON_WICKET_ID = "jenkinsStartVerificationButton";
 
 	private final Component jenkinsCheckConfigurationResult =
 			new EmptyPanel(JENKINS_CHECK_CONFIGURATION_RESULT_WICKET_ID).setOutputMarkupId(true); // can be replaced via AJAX
@@ -743,6 +751,22 @@ public class EditRepositoryPage extends RootSubPage {
 				form.replace(resultLabel);
 				target.addComponent(form);
 				target.appendJavascript("$('#ciTabLink').click();");
+			}
+		}.setDefaultFormProcessing(false));
+
+		form.add(new AjaxSubmitLink(JENKINS_START_VERIFICATION_BUTTON_WICKET_ID) {
+			@Override
+			protected void onSubmit(AjaxRequestTarget target, Form<?> form) {
+				List<TicketModel> tickets = app().tickets().getTickets(repositoryModel);
+				for (TicketModel ticket : tickets) {
+					if (TicketModel.CIScore.not_started_yet.equals(ticket.getTicketCiBuildStatus())) {
+						String refName = Constants.R_TICKET + String.valueOf(ticket.number);
+						String lastCommitSha1 = ticket.getCurrentPatchset().tip;
+						Repository repository = app().repositories().getRepository(repositoryModel.name);
+						JenkinsVerification v = new JenkinsVerification(repositoryModel, repository, refName,
+																		lastCommitSha1);
+					}
+				}
 			}
 		}.setDefaultFormProcessing(false));
 

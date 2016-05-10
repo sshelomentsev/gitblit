@@ -15,6 +15,13 @@
  */
 package com.gitblit.models;
 
+import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
+import com.gitblit.manager.IRepositoryManager;
+import com.gitblit.utils.JGitUtils;
+import com.gitblit.wicket.GitBlitWebApp;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.util.RelativeDateFormatter;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,13 +47,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
-import com.gitblit.manager.IRepositoryManager;
-import com.gitblit.utils.JGitUtils;
-import com.gitblit.wicket.GitBlitWebApp;
-import org.eclipse.jgit.lib.Repository;
-import org.eclipse.jgit.util.RelativeDateFormatter;
 
 /**
  * The Gitblit Ticket model, its component classes, and enums.
@@ -92,29 +92,29 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		List<Change> effectiveChanges = new ArrayList<Change>();
 		Map<String, Change> comments = new HashMap<String, Change>();
 		Map<Integer, Integer> latestRevisions = new HashMap<Integer, Integer>();
-		
+
 		int latestPatchsetNumber = -1;
-		
+
 		List<Integer> deletedPatchsets = new ArrayList<Integer>();
-		
+
 		for (Change change : changes) {
 			if (change.patchset != null) {
 				if (change.patchset.isDeleted()) {
 					deletedPatchsets.add(change.patchset.number);
 				} else {
 					Integer latestRev = latestRevisions.get(change.patchset.number);
-					
+
 					if (latestRev == null || change.patchset.rev > latestRev) {
 						latestRevisions.put(change.patchset.number, change.patchset.rev);
 					}
-					
+
 					if (change.patchset.number > latestPatchsetNumber) {
 						latestPatchsetNumber = change.patchset.number;
-					}	
+					}
 				}
 			}
 		}
-		
+
 		for (Change change : changes) {
 			if (change.comment != null) {
 				if (comments.containsKey(change.comment.id)) {
@@ -133,14 +133,14 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 			} else if (change.patchset != null) {
 				//All revisions of a deleted patchset are not displayed
 				if (!deletedPatchsets.contains(change.patchset.number)) {
-					
+
 					Integer latestRev = latestRevisions.get(change.patchset.number);
-					
-					if (    (change.patchset.number < latestPatchsetNumber) 
+
+					if (    (change.patchset.number < latestPatchsetNumber)
 						 && (change.patchset.rev == latestRev)) {
 						change.patchset.canDelete = true;
 					}
-					
+
 					effectiveChanges.add(change);
 				}
 			} else {
@@ -1243,7 +1243,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	public static class CiVerification implements Serializable {
 		private static final long serialVersionUID = 1L;
 
-		public CIScore score;
+		public CIScore score = CIScore.not_started_yet;
 		public String jobUrl = "";
 
 		public CiVerification(CIScore score) {
@@ -1268,7 +1268,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 
 	}
 
-	public static class CiBuildInvocation {
+	public static class CiBuildInvocation implements Serializable {
 		private static final long serialVersionUID = 1L;
 
 		private String jobName;
@@ -1335,7 +1335,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	}
 
 	public enum CIScore {
-		success(0), unstable(1), failed(2), in_progress(3), aborted(4);
+		success(0), unstable(1), failed(2), in_progress(3), aborted(4), not_started_yet(5);
 
 		final int value;
 
@@ -1473,10 +1473,10 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	public enum CommentSource {
 		Comment, Email
 	}
-	
+
 	public static enum PatchsetType {
 		Proposal, FastForward, Rebase, Squash, Rebase_Squash, Amend, Delete;
-		
+
 		public boolean isRewrite() {
 			return (this != FastForward) && (this != Proposal);
 		}
@@ -1525,7 +1525,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		public int getValue() {
 			return value;
 		}
-		
+
 		public static Priority [] choices() {
 			return new Priority [] { Urgent, High, Normal, Low };
 		}
@@ -1562,14 +1562,14 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 			return defaultPriority;
 		}
 	}
-	
+
 	public enum Severity {
 		Unrated(-1), Negligible(1), Minor(2), Serious(3), Critical(4), Catastrophic(5);
 
 		public static Severity defaultSeverity = Unrated;
-		
+
 		final int value;
-		
+
 		Severity(int value) {
 			this.value = value;
 		}
@@ -1577,7 +1577,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		public int getValue() {
 			return value;
 		}
-		
+
 		public static Severity [] choices() {
 			return new Severity [] { Unrated, Negligible, Minor, Serious, Critical, Catastrophic };
 		}
@@ -1586,7 +1586,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		public String toString() {
 			return name().toLowerCase().replace('_', ' ');
 		}
-		
+
 		public static Severity fromObject(Object o, Severity defaultSeverity) {
 			if (o instanceof Severity) {
 				// cast and return
@@ -1601,7 +1601,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 					}
 				}
 			} else if (o instanceof Number) {
-				
+
 				switch (((Number) o).intValue()) {
 					case -1: return Severity.Unrated;
 					case 1:  return Severity.Negligible;
