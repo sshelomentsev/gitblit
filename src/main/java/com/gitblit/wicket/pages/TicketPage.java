@@ -1417,7 +1417,7 @@ public class TicketPage extends RepositoryPage {
 	private WebMarkupContainer createApprovalsPanel(CiScoreInfo ciScoreInfo) {
 		String approvalsPanelName = "approvalsPanel";
 		WebMarkupContainer approvalsPanel;
-		if (ciScoreInfo.ciScoreDesc != null) {
+		if (ciIntegrationEnabled && ciScoreInfo.ciScoreDesc != null) {
 			approvalsPanel = new Fragment(approvalsPanelName, "approvalsFragment", this);
 			approvalsPanel.add(new LinkPanel("approvals", null, ciScoreInfo.ciScoreDesc, ciScoreInfo.ciBuildUrl,
 											 ciScoreInfo.ciBuildUrl != null)); // new tab if there's Jenkins link
