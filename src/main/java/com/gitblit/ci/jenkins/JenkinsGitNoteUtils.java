@@ -29,11 +29,11 @@ public final class JenkinsGitNoteUtils {
             JSONObject noteJsonObject = new JSONObject(note);
             Integer ciStatusIntValue = (Integer) noteJsonObject.get(CI_STATUS);
             if (ciStatusIntValue == null) {
-                return null;
+                return TicketModel.CIScore.not_started_yet;
             }
             return TicketModel.CIScore.fromScore(ciStatusIntValue);
         } catch (NoSuchElementException | ClassCastException | JSONException ignore) {
-            return null;
+            return TicketModel.CIScore.not_started_yet;
         }
     }
 

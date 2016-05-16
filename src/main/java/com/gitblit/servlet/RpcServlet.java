@@ -15,6 +15,32 @@
  */
 package com.gitblit.servlet;
 
+import com.gitblit.Constants;
+import com.gitblit.Constants.RpcRequest;
+import com.gitblit.GitBlitException;
+import com.gitblit.IStoredSettings;
+import com.gitblit.Keys;
+import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
+import com.gitblit.manager.IGitblit;
+import com.gitblit.models.RefModel;
+import com.gitblit.models.RegistrantAccessPermission;
+import com.gitblit.models.RepositoryModel;
+import com.gitblit.models.ServerSettings;
+import com.gitblit.models.TeamModel;
+import com.gitblit.models.TicketModel;
+import com.gitblit.models.UserModel;
+import com.gitblit.utils.DeepCopier;
+import com.gitblit.utils.HttpUtils;
+import com.gitblit.utils.JGitUtils;
+import com.gitblit.utils.RpcUtils;
+import com.gitblit.utils.StringUtils;
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import org.eclipse.jgit.lib.Repository;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -23,34 +49,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-
-import com.gitblit.ci.jenkins.JenkinsGitNoteUtils;
-import com.gitblit.models.TicketModel;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jgit.lib.Repository;
-
-import com.gitblit.Constants;
-import com.gitblit.Constants.RpcRequest;
-import com.gitblit.GitBlitException;
-import com.gitblit.IStoredSettings;
-import com.gitblit.Keys;
-import com.gitblit.manager.IGitblit;
-import com.gitblit.models.RefModel;
-import com.gitblit.models.RegistrantAccessPermission;
-import com.gitblit.models.RepositoryModel;
-import com.gitblit.models.ServerSettings;
-import com.gitblit.models.TeamModel;
-import com.gitblit.models.UserModel;
-import com.gitblit.utils.DeepCopier;
-import com.gitblit.utils.HttpUtils;
-import com.gitblit.utils.JGitUtils;
-import com.gitblit.utils.RpcUtils;
-import com.gitblit.utils.StringUtils;
 
 /**
  * Handles remote procedure calls.
@@ -443,6 +441,7 @@ public class RpcServlet extends JsonServlet {
 							.addCiJobUrl(jobUrl)
 							.build();
 					boolean noteAdded = JGitUtils.addNote(gitblit.getRepository(repository), lastCommit, note);
+					System.out.println("Add note from RPC = " + note);
 					if (!noteAdded) {
 						response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
 										   "Cannot process request due to internal server error");

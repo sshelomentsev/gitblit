@@ -70,6 +70,7 @@ import com.gitblit.wicket.panels.SimpleAjaxLink;
 import org.apache.wicket.AttributeModifier;
 import org.apache.wicket.Component;
 import org.apache.wicket.MarkupContainer;
+import org.apache.wicket.Page;
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.RestartResponseException;
 import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
@@ -1053,6 +1054,9 @@ public class TicketPage extends RepositoryPage {
 					}
 					Label whatLabel = new Label("what", what);
 					whatLabel.setEscapeModelStrings(false); // echo raw HTML markup
+					item.add(whatLabel);
+					item.add(new Label("deleteRevision").setVisible(false));
+
 				} else {
 					// field change
 					item.add(new Label("patchsetRevision").setVisible(false));
@@ -1435,22 +1439,26 @@ public class TicketPage extends RepositoryPage {
 					String lastCommitSha1 = currentPatchset.tip;
 					JenkinsVerification v = new JenkinsVerification(getRepositoryModel(), getRepository(), refName,
 																	lastCommitSha1);
+					v.startVerification(false);
 				}
 			};
 			startLink.setVisible(!alreadyVerified);
 			approvalsPanel.add(startLink);
 
 			AjaxLink<String> restartLink = new AjaxLink<String>("restartApproval") {
+
 				@Override
 				public void onClick(AjaxRequestTarget target) {
 					String refName = Constants.R_TICKET + String.valueOf(ticket.number);
 					String lastCommitSha1 = currentPatchset.tip;
 					JenkinsVerification v = new JenkinsVerification(getRepositoryModel(), getRepository(), refName,
 																	lastCommitSha1);
+					v.startVerification(true);
 				}
 			};
 			restartLink.setVisible(alreadyVerified);
 			approvalsPanel.add(restartLink);
+
 		} else {
 			approvalsPanel = new WebMarkupContainer(approvalsPanelName);
 			approvalsPanel.setVisible(false);
@@ -1480,6 +1488,8 @@ public class TicketPage extends RepositoryPage {
 				return CSS_TIMES_CIRCLE + ' ' + CSS_COLOR_RED;
 			case in_progress:
 				return CSS_SPINNER + ' ' + CSS_COLOR_GREY;
+			case restarted:
+				return CSS_SPINNER + ' ' + CSS_COLOR_GREY;
 			case aborted:
 				return CSS_BAN + ' ' + CSS_COLOR_GREY;
 			default:
@@ -1503,6 +1513,9 @@ public class TicketPage extends RepositoryPage {
 				break;
 			case in_progress:
 				description = getString("gb.CIProgress");
+				break;
+			case restarted:
+				description = getString("gb.CIProgressRestarted");
 				break;
 			case aborted:
 				description = getString("gb.CIAborted");
@@ -1920,7 +1933,7 @@ public class TicketPage extends RepositoryPage {
 					CIScore buildStatus = buildInfo.getBuildStatus();
 
 					for (RevCommit commit : commits) {
-						if (Objects.equals(commit.getName(), sha1)) {
+						if (!CIScore.restarted.equals(buildStatus) && Objects.equals(commit.getName(), sha1)) {
 							String noteToAdd = JenkinsGitNoteUtils.createNoteBuilder()
 									.addCiBuildStatus(buildStatus)
 									.addCiJobUrl(buildUrl)

@@ -33,19 +33,35 @@ import java.util.Map;
 
 public class JenkinsVerification {
 
-    private RepositoryModel repositoryModel;
+    private final RepositoryModel repositoryModel;
+    private final Repository repository;
+    private final String refName;
+    private final String lastCommitSha1;
 
     public JenkinsVerification(RepositoryModel repositoryModel, Repository repository, String refName, String
             lastCommitSha1) {
         this.repositoryModel = repositoryModel;
+        this.repository = repository;
+        this.refName = refName;
+        this.lastCommitSha1 = lastCommitSha1;
+    }
+
+    public boolean startVerification(boolean restart) {
         String requestParamsStr = defineRequestParams(refName, lastCommitSha1);
         String uriStr = repositoryModel.CIUrl + "/gitblit/notifyCommit?" + requestParamsStr;
         URI uri = URI.create(uriStr);
         int code = sendRequest(uri);
+        boolean added = false;
         if (200 == code) {
-            String note = JenkinsGitNoteUtils.createNoteBuilder().addBuildInvocationTime(new Date()).build();
-            boolean added = JGitUtils.addNote(repository, lastCommitSha1, note);
+            JenkinsGitNoteUtils.GitNoteBuilder builder = JenkinsGitNoteUtils.createNoteBuilder();
+            builder.addBuildInvocationTime(new Date());
+            TicketModel.CIScore score = restart ? TicketModel.CIScore.restarted : TicketModel.CIScore.in_progress;
+            builder.addCiBuildStatus(score);
+            builder.addCiJobUrl(uriStr);
+            String note = builder.build();
+            added = JGitUtils.addNote(repository, lastCommitSha1, note);
         }
+        return added;
     }
 
     private String defineRequestParams(String refName, String lastCommitSha1) {

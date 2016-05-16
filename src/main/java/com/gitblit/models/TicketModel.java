@@ -435,29 +435,6 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 		return new ArrayList<Change>(reviews.values());
 	}
 
-	/*
-	public List<Change> getCiApprovals(Patchset patchset) {
-		this.verification;
-		System.out.println("get ci approvals");
-		if (null == patchset) {
-			System.out.println("IS NULL");
-			return Collections.emptyList();
-		}
-
-		Map<String, Change> approvals = new LinkedHashMap<>();
-		System.out.println("changes size = " + changes.size());
-		for (Change change : changes) {
-			if (change.hasVerification() && change.verification.isVerifiedOf(patchset)) {
-				//TODO
-				//add approval name
-				approvals.put("AAA", change);
-			}
-		}
-		return new ArrayList<>(approvals.values());
-	}
-	*/
-
-
 	public boolean isApproved(Patchset patchset) {
 		if (patchset == null) {
 			return false;
@@ -1335,7 +1312,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	}
 
 	public enum CIScore {
-		success(0), unstable(1), failed(2), in_progress(3), aborted(4), not_started_yet(5);
+		success(0), unstable(1), failed(2), in_progress(3), aborted(4), not_started_yet(5), restarted(6);
 
 		final int value;
 
