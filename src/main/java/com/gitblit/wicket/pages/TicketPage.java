@@ -973,9 +973,6 @@ public class TicketPage extends RepositoryPage {
 				if (event.hasPatchset()) {
 					// patchset
 					Patchset patchset = event.patchset;
-					//In the case of using a cached change list
-					item.setVisible(!patchset.isDeleted());
-
 					String what;
 					if (event.isStatusChange() && (Status.New == event.getStatus())) {
 						what = getString("gb.proposedThisChange");
@@ -993,6 +990,7 @@ public class TicketPage extends RepositoryPage {
 					LinkPanel psr = new LinkPanel("patchsetRevision", null, patchset.number + "-" + patchset.rev,
 							ComparePage.class, WicketUtils.newRangeParameter(repositoryName, patchset.parent == null ? patchset.base : patchset.parent, patchset.tip), true);
 					WicketUtils.setHtmlTooltip(psr, patchset.toString());
+					WicketUtils.setCssClass(psr, "aui-lozenge aui-lozenge-subtle");
 					item.add(psr);
 					String typeCss = getPatchsetTypeCss(patchset.type);
 					Label typeLabel = new Label("patchsetType", patchset.type.toString());
@@ -1017,6 +1015,42 @@ public class TicketPage extends RepositoryPage {
 					// comment
 					item.add(new Label("what", getString("gb.commented")));
 					item.add(new Label("patchsetRevision").setVisible(false));
+					item.add(new Label("patchsetType").setVisible(false));
+					item.add(new Label("deleteRevision").setVisible(false));
+					item.add(new Label("patchsetDiffStat").setVisible(false));
+				} else if (event.hasReference()) {
+					// reference
+					switch (event.reference.getSourceType()) {
+						case Commit: {
+							final int shaLen = app().settings().getInteger(Keys.web.shortCommitIdLength, 6);
+
+							item.add(new Label("what", getString("gb.referencedByCommit")));
+							LinkPanel psr = new LinkPanel("patchsetRevision", null, event.reference.toString().substring(0, shaLen),
+									CommitPage.class, WicketUtils.newObjectParameter(repositoryName, event.reference.toString()), true);
+							WicketUtils.setHtmlTooltip(psr, event.reference.toString());
+							WicketUtils.setCssClass(psr, "ticketReference-commit shortsha1");
+							item.add(psr);
+
+						} break;
+
+						case Ticket: {
+							final String text = MessageFormat.format("ticket/{0}", event.reference.ticketId);
+
+							item.add(new Label("what", getString("gb.referencedByTicket")));
+							//NOTE: Ideally reference the exact comment using reference.toString,
+							//		however anchor hash is used and is escaped resulting in broken link
+							LinkPanel psr = new LinkPanel("patchsetRevision", null,  text,
+									TicketsPage.class, WicketUtils.newObjectParameter(repositoryName, event.reference.ticketId.toString()), true);
+							WicketUtils.setCssClass(psr, "ticketReference-comment");
+							item.add(psr);
+						} break;
+
+						default: {
+							item.add(new Label("what").setVisible(false));
+							item.add(new Label("patchsetRevision").setVisible(false));
+						}
+					}
+
 					item.add(new Label("patchsetType").setVisible(false));
 					item.add(new Label("deleteRevision").setVisible(false));
 					item.add(new Label("patchsetDiffStat").setVisible(false));
@@ -1624,14 +1658,14 @@ public class TicketPage extends RepositoryPage {
 		boolean ciApproval = !repository.enableCI || CIScore.success == ticket.getTicketCiBuildStatus();
 		boolean allowMerge;
 		if (repository.requireApproval) {
-			// rpeository requires approval
+			// repository requires approval
 			allowMerge = ticket.isOpen() && ticket.isApproved(patchset) && ciApproval;
 		} else {
-			// vetos are binding
+			// vetoes are binding
 			allowMerge = ticket.isOpen() && !ticket.isVetoed(patchset);
 		}
 
-		MergeStatus mergeStatus = JGitUtils.canMerge(getRepository(), patchset.tip, ticket.mergeTo);
+		MergeStatus mergeStatus = JGitUtils.canMerge(getRepository(), patchset.tip, ticket.mergeTo, repository.mergeType);
 		if (allowMerge) {
 			if (MergeStatus.MERGEABLE == mergeStatus) {
 				// patchset can be cleanly merged to integration branch OR has already been merged
