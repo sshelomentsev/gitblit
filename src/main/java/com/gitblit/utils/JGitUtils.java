@@ -3023,7 +3023,7 @@ public class JGitUtils {
 		Set<Ref> refs = map.get(commit.getId());
 		if (!ArrayUtils.isEmpty(refs)) {
 			for (Ref ref : refs) {
-				long number = PatchsetCommand.getTicketNumber(ref.getName());
+				long number = RefNameUtils.getTicketNumber(ref.getName());
 				
 				if (number > 0) {
 					return number;
