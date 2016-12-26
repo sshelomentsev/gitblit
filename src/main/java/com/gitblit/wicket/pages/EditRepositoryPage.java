@@ -56,6 +56,7 @@ import com.gitblit.Constants.AccessRestrictionType;
 import com.gitblit.Constants.AuthorizationControl;
 import com.gitblit.Constants.CommitMessageRenderer;
 import com.gitblit.Constants.FederationStrategy;
+import com.gitblit.Constants.MergeType;
 import com.gitblit.Constants.RegistrantType;
 import com.gitblit.GitBlitException;
 import com.gitblit.Keys;
@@ -446,7 +447,7 @@ public class EditRepositoryPage extends RootSubPage {
 		form.add(new BooleanOption("acceptNewTickets",
 				getString("gb.acceptNewTickets"),
 				getString("gb.acceptNewTicketsDescription"),
-				new PropertyModel<Boolean>(repositoryModel, "acceptNewPatchsets")));
+				new PropertyModel<Boolean>(repositoryModel, "acceptNewTickets")));
 
 		form.add(new BooleanOption("requireApproval",
 				getString("gb.requireApproval"),
@@ -458,6 +459,11 @@ public class EditRepositoryPage extends RootSubPage {
 				getString("gb.mergeToDescription"),
 				new PropertyModel<String>(repositoryModel, "mergeTo"),
 				availableBranches));
+		form.add(new ChoiceOption<MergeType>("mergeType",
+				getString("gb.mergeType"),
+				getString("gb.mergeTypeDescription"),
+				new PropertyModel<MergeType>(repositoryModel, "mergeType"),
+				Arrays.asList(MergeType.values())));
 
 		//
 		// RECEIVE

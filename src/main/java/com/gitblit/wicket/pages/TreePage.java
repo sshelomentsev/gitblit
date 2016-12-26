@@ -15,26 +15,33 @@
  */
 package com.gitblit.wicket.pages;
 
+import java.io.OutputStream;
 import java.util.List;
 
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.markup.html.basic.Label;
 import org.apache.wicket.markup.html.link.BookmarkablePageLink;
 import org.apache.wicket.markup.html.link.ExternalLink;
+import org.apache.wicket.markup.html.link.Link;
 import org.apache.wicket.markup.html.panel.Fragment;
 import org.apache.wicket.markup.repeater.Item;
 import org.apache.wicket.markup.repeater.data.DataView;
 import org.apache.wicket.markup.repeater.data.ListDataProvider;
+import org.apache.wicket.request.target.resource.ResourceStreamRequestTarget;
+import org.apache.wicket.util.resource.AbstractResourceStreamWriter;
+import org.apache.wicket.util.resource.IResourceStream;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 
 import com.gitblit.models.PathModel;
 import com.gitblit.models.SubmoduleModel;
+import com.gitblit.models.UserModel;
 import com.gitblit.servlet.RawServlet;
 import com.gitblit.utils.ByteFormat;
 import com.gitblit.utils.JGitUtils;
 import com.gitblit.wicket.CacheControl;
+import com.gitblit.wicket.GitBlitWebSession;
 import com.gitblit.wicket.CacheControl.LastModified;
 import com.gitblit.wicket.WicketUtils;
 import com.gitblit.wicket.panels.CommitHeaderPanel;
@@ -88,18 +95,18 @@ public class TreePage extends RepositoryPage {
 
 			@Override
 			public void populateItem(final Item<PathModel> item) {
-				PathModel entry = item.getModelObject();
+				final PathModel entry = item.getModelObject();
 				
 				item.add(new Label("pathPermissions", JGitUtils.getPermissionsFromMode(entry.mode)));
-				
+				item.add(WicketUtils.setHtmlTooltip(new Label("filestore", ""), getString("gb.filestore"))
+									.setVisible(entry.isFilestoreItem()));
+
 				if (entry.isParentPath) {
 					// parent .. path
 					item.add(WicketUtils.newBlankImage("pathIcon"));
 					item.add(new Label("pathSize", ""));
 					item.add(new LinkPanel("pathName", null, entry.name, TreePage.class,
-							WicketUtils
-									.newPathParameter(repositoryName, id, entry.path)));
-					item.add(new Label("filestore", getString("gb.filestore")).setVisible(false));
+							WicketUtils.newPathParameter(repositoryName, id, entry.path)));
 					item.add(new Label("pathLinks", ""));
 				} else {
 					if (entry.isTree()) {
@@ -109,8 +116,6 @@ public class TreePage extends RepositoryPage {
 						item.add(new LinkPanel("pathName", "list", entry.name, TreePage.class,
 								WicketUtils.newPathParameter(repositoryName, id,
 										entry.path)));
-
-						item.add(new Label("filestore", getString("gb.filestore")).setVisible(false));
 
 						// links
 						Fragment links = new Fragment("pathLinks", "treeLinks", this);
@@ -139,8 +144,6 @@ public class TreePage extends RepositoryPage {
 								getShortObjectId(submoduleId), TreePage.class,
 								WicketUtils.newPathParameter(submodulePath, submoduleId, "")).setEnabled(hasSubmodule));
 
-						item.add(new Label("filestore", getString("gb.filestore")).setVisible(false));
-						
 						Fragment links = new Fragment("pathLinks", "submoduleLinks", this);
 						links.add(new BookmarkablePageLink<Void>("view", SummaryPage.class,
 								WicketUtils.newRepositoryParameter(submodulePath)).setEnabled(hasSubmodule));
@@ -168,17 +171,79 @@ public class TreePage extends RepositoryPage {
 						Fragment links = new Fragment("pathLinks", "blobLinks", this);
 						
 						if (entry.isFilestoreItem()) {
-							item.add(new Label("filestore", getString("gb.filestore")).setVisible(true));
+							item.add(new LinkPanel("pathName", "list", displayPath, new Link<Object>("link", null) {
+								 
+								private static final long serialVersionUID = 1L;
+
+								@Override
+							    public void onClick() {
+							 
+							    	 IResourceStream resourceStream = new AbstractResourceStreamWriter() {
+							    		 								    	
+										private static final long serialVersionUID = 1L;
+
+										@Override 
+							    	      public void write(OutputStream output) {
+							    	   		 UserModel user =  GitBlitWebSession.get().getUser();
+										     user = user == null ? UserModel.ANONYMOUS : user;
+										    	
+							    	        app().filestore().downloadBlob(entry.getFilestoreOid(), user, getRepositoryModel(), output);
+							    	      }
+							    	  };
+							    	      
+							    	
+							    	getRequestCycle().setRequestTarget(new ResourceStreamRequestTarget(resourceStream, entry.path));
+							    }}));
 							
-							final String filestoreItemUrl = JGitUtils.getLfsRepositoryUrl(getContextUrl(), repositoryName, entry.getFilestoreOid());
+							links.add(new Link<Object>("view", null) {
+								 
+								private static final long serialVersionUID = 1L;
+
+								@Override
+							    public void onClick() {
+							 
+							    	 IResourceStream resourceStream = new AbstractResourceStreamWriter() {
+							    		 								    	
+										private static final long serialVersionUID = 1L;
+
+										@Override 
+							    	      public void write(OutputStream output) {
+							    	   		 UserModel user =  GitBlitWebSession.get().getUser();
+										     user = user == null ? UserModel.ANONYMOUS : user;
+										    	
+							    	        app().filestore().downloadBlob(entry.getFilestoreOid(), user, getRepositoryModel(), output);
+							    	      }
+							    	  };
+							    	      
+							    	
+							    	getRequestCycle().setRequestTarget(new ResourceStreamRequestTarget(resourceStream, entry.path));
+							    }});
 							
-							item.add(new LinkPanel("pathName", "list", displayPath, filestoreItemUrl));
-							links.add(new ExternalLink("view", filestoreItemUrl));
-							links.add(new ExternalLink("raw", filestoreItemUrl));
+							links.add(new Link<Object>("raw", null) {
+								 
+								private static final long serialVersionUID = 1L;
+
+								@Override
+							    public void onClick() {
+							 
+							    	 IResourceStream resourceStream = new AbstractResourceStreamWriter() {
+							    		 								    	
+										private static final long serialVersionUID = 1L;
+
+										@Override 
+							    	      public void write(OutputStream output) {
+							    	   		 UserModel user =  GitBlitWebSession.get().getUser();
+										     user = user == null ? UserModel.ANONYMOUS : user;
+										    	
+							    	        app().filestore().downloadBlob(entry.getFilestoreOid(), user, getRepositoryModel(), output);
+							    	      }
+							    	  };
+							    	      
+							    	
+							    	getRequestCycle().setRequestTarget(new ResourceStreamRequestTarget(resourceStream, entry.path));
+							    }});
 							
 						} else {
-							item.add(new Label("filestore", getString("gb.filestore")).setVisible(false));
-							
 							item.add(new LinkPanel("pathName", "list", displayPath, BlobPage.class,
 									WicketUtils.newPathParameter(repositoryName, id,
 											path)));
