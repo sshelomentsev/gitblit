@@ -357,7 +357,9 @@ pt push</pre>
 						<td style="padding:8px 0px;text-align:right;"><span style="padding-right:40px;"><span wicket:id="commitDiffStat"></span></span></td>
 						<td style="text-align:right;"><span class="attribution-date" wicket:id="commitDate">[commit date]</span></td>
 						<wicket:enclosure child="buildStatus">
-							<td style="text-align:right;"> <i wicket:id="buildStatusIcon" /> <span wicket:id="buildStatus">[build status]</span></td>
+							<!-- fixing size to avoid column resizing on CI status change -->
+							<td style="text-align:right; width: 175px;"> <i wicket:id="buildStatusIcon" /> <span
+									wicket:id="buildStatus">[build status]</span></td>
 						</wicket:enclosure>
 					</tr>
 				</tbody>
