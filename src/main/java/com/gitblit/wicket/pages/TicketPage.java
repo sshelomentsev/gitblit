@@ -73,6 +73,7 @@ import org.apache.wicket.MarkupContainer;
 import org.apache.wicket.Page;
 import org.apache.wicket.PageParameters;
 import org.apache.wicket.RestartResponseException;
+import org.apache.wicket.ajax.AbstractAjaxTimerBehavior;
 import org.apache.wicket.ajax.AbstractDefaultAjaxBehavior;
 import org.apache.wicket.ajax.AjaxRequestTarget;
 import org.apache.wicket.ajax.markup.html.AjaxLink;
@@ -93,6 +94,7 @@ import org.apache.wicket.markup.repeater.data.ListDataProvider;
 import org.apache.wicket.model.Model;
 import org.apache.wicket.protocol.http.RequestUtils;
 import org.apache.wicket.protocol.http.WebRequest;
+import org.apache.wicket.util.time.Duration;
 import org.eclipse.jgit.diff.DiffEntry.ChangeType;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
@@ -109,6 +111,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -127,22 +130,26 @@ public class TicketPage extends RepositoryPage {
 	static final String NIL = "<nil>";
 	static final String ESC_NIL = StringUtils.escapeForHtml(NIL,  false);
 
-	private static final String CSS_CHECK_CIRCLE = "fa fa-check-circle";
-	private static final String CSS_EXCLAMATION_CIRCLE = "fa fa-exclamation-circle";
-	private static final String CSS_TIMES_CIRCLE = "fa fa-times-circle";
-	private static final String CSS_SPINNER = "fa fa-spinner";
-	private static final String CSS_BAN = "fa fa-ban";
-	private static final String CSS_COG = "fa fa-cog";
-	private static final String CSS_THUMBS_O_DOWN = "fa fa-thumbs-o-down";
-	private static final String CSS_THUMBS_O_UP = "fa fa-thumbs-o-up";
-	private static final String CSS_MINUS_CIRCLE = "fa fa-minus-circle";
-	private static final String CSS_EXCLAMATION = "fa fa-exclamation";
+	private static final String CSS_CHECK_CIRCLE = "fa fa-check-circle fa-fw";
+	private static final String CSS_EXCLAMATION_CIRCLE = "fa fa-exclamation-circle fa-fw";
+	private static final String CSS_TIMES_CIRCLE = "fa fa-times-circle fa-fw";
+	private static final String CSS_SPINNER = "fa fa-spinner fa-fw";
+	private static final String CSS_BAN = "fa fa-ban fa-fw";
+	private static final String CSS_COG = "fa fa-cog fa-fw";
+	private static final String CSS_THUMBS_O_DOWN = "fa fa-thumbs-o-down fa-fw";
+	private static final String CSS_THUMBS_O_UP = "fa fa-thumbs-o-up fa-fw";
+	private static final String CSS_MINUS_CIRCLE = "fa fa-minus-circle fa-fw";
+	private static final String CSS_EXCLAMATION = "fa fa-exclamation fa-fw";
+	private static final String CSS_REFRESH = "fa fa-refresh fa-fw";
+
+	private static final String CSS_SPIN = "fa-spin";
 
 	private static final String CSS_COLOR_RED = "color-red";
 	private static final String CSS_COLOR_GREEN = "color-green";
 	private static final String CSS_COLOR_GREY = "color-grey";
 	private static final String CSS_COLOR_YELLOW = "color-yellow";
 
+	private static final Duration COMMIT_STATUS_UPDATE_INTERVAL = Duration.seconds(5);
 	private static final int DAYS_TO_UPDATE_COMMIT_STATUSES = 10;
 
 	final int avatarWidth = 40;
@@ -153,6 +160,7 @@ public class TicketPage extends RepositoryPage {
 	private final Patchset currentPatchset;
 
 	private WebMarkupContainer ciApprovalsPanel; // 'Commits' tab; can be empty if there's no patchset
+	private DataView<RevCommit> commitsView; // 'Commits' tab; can be empty if there's no patchset
 	private final WebMarkupContainer ticketBuildStatusPanel; // 'Discussion' tab; can be empty if CI integration is disabled
 
 	public TicketPage(PageParameters params) {
@@ -867,7 +875,7 @@ public class TicketPage extends RepositoryPage {
 
 			commits = JGitUtils.getRevLog(getRepository(), currentPatchset.base, currentPatchset.tip);
 			ListDataProvider<RevCommit> commitsDp = new ListDataProvider<RevCommit>(commits);
-			DataView<RevCommit> commitsView = new DataView<RevCommit>("commit", commitsDp) {
+			commitsView = new DataView<RevCommit>("commit", commitsDp) {
 				private static final long serialVersionUID = 1L;
 
 				@Override
@@ -922,8 +930,10 @@ public class TicketPage extends RepositoryPage {
 			add(patchsetFrag);
 
 			if (ciIntegrationEnabled && commits.size() > 0) {
-				CommitStatusUpdateAjaxBehavior ajaxBehavior = new CommitStatusUpdateAjaxBehavior(commits, commitsView);
-				add(ajaxBehavior);
+				CommitStatusUpdateAjaxBehavior commitStatusUpdateAjaxBehavior = new CommitStatusUpdateAjaxBehavior(commits);
+				add(commitStatusUpdateAjaxBehavior);
+				CommitStatusUpdateAjaxBehaviorOnTimer commitStatusUpdateAjaxBehaviorOnTimer = new CommitStatusUpdateAjaxBehaviorOnTimer(commits);
+				add(commitStatusUpdateAjaxBehaviorOnTimer);
 			}
 		}
 
@@ -1474,6 +1484,7 @@ public class TicketPage extends RepositoryPage {
 					JenkinsVerification v = new JenkinsVerification(getRepositoryModel(), getRepository(), refName,
 																	lastCommitSha1);
 					v.startVerification(false);
+					updatePanels(target);
 				}
 			};
 			startLink.setVisible(!alreadyVerified);
@@ -1488,6 +1499,7 @@ public class TicketPage extends RepositoryPage {
 					JenkinsVerification v = new JenkinsVerification(getRepositoryModel(), getRepository(), refName,
 																	lastCommitSha1);
 					v.startVerification(true);
+					updatePanels(target);
 				}
 			};
 			restartLink.setVisible(alreadyVerified);
@@ -1521,11 +1533,13 @@ public class TicketPage extends RepositoryPage {
 			case failed:
 				return CSS_TIMES_CIRCLE + ' ' + CSS_COLOR_RED;
 			case in_progress:
-				return CSS_SPINNER + ' ' + CSS_COLOR_GREY;
+				return CSS_SPINNER + ' ' + CSS_SPIN + ' ' + CSS_COLOR_GREY;
 			case restarted:
-				return CSS_SPINNER + ' ' + CSS_COLOR_GREY;
+				return CSS_REFRESH + ' ' + CSS_SPIN + ' ' + CSS_COLOR_GREY;
 			case aborted:
 				return CSS_BAN + ' ' + CSS_COLOR_GREY;
+			case pending:
+				return CSS_COG + ' ' + CSS_SPIN + ' ' + CSS_COLOR_GREY;
 			default:
 				// can happen if CIScore model is updated with new enum elements but this method isn't changed.
 				// it'd broke the entire page so can't throw an exception here.
@@ -1553,6 +1567,9 @@ public class TicketPage extends RepositoryPage {
 				break;
 			case aborted:
 				description = getString("gb.CIAborted");
+				break;
+			case pending:
+				description = getString("gb.CIPending");
 				break;
 			default:
 				description = getString("gb.CINotVerified");
@@ -1929,9 +1946,30 @@ public class TicketPage extends RepositoryPage {
 		return JGitUtils.getNote(getRepository(), commit.getName());
 	}
 
-	private synchronized int updateCommitStatuses(List<RevCommit> commits) {
+
+	private static final class UpdateCommitStatusesCount {
+		private final int toCheckCount;
+		private final int updatedCount;
+
+		private UpdateCommitStatusesCount(int toCheckCount, int updatedCount) {
+			this.toCheckCount = toCheckCount;
+			this.updatedCount = updatedCount;
+		}
+
+		public int getToCheckCount() {
+			return toCheckCount;
+		}
+
+		public int getUpdatedCount() {
+			return updatedCount;
+		}
+	}
+
+	private UpdateCommitStatusesCount updateCommitStatuses(List<RevCommit> commits) {
 		synchronized (TicketPage.class) { // protection from concurrency git notes update operations
 			List<RevCommit> commitsToCheckBuildStatus = new ArrayList<>();
+			List<RevCommit> commitsWithPendingStatus = new ArrayList<>();
+			int commitsWithEmptyNoteCount = 0;
 			for (RevCommit commit : commits) {
 				if (commitIsTooOld(commit)) {
 					// commits should be sorted by date from latest to earliest
@@ -1940,48 +1978,87 @@ public class TicketPage extends RepositoryPage {
 				String note = getNoteForCommit(commit);
 				if (StringUtils.isEmpty(note)) {
 					commitsToCheckBuildStatus.add(commit);
+					commitsWithEmptyNoteCount++;
 				} else {
 					CIScore ciScore = JenkinsGitNoteUtils.readCiBuildStatus(note);
-					if (ciScore == CIScore.in_progress) {
+					if (ciScore == CIScore.in_progress || ciScore == CIScore.not_started_yet
+							|| ciScore == CIScore.restarted) {
 						commitsToCheckBuildStatus.add(commit);
+					}
+					if (ciScore == CIScore.pending) {
+						commitsToCheckBuildStatus.add(commit);
+						commitsWithPendingStatus.add(commit);
 					}
 				}
 			}
-			logger.info("Requesting " + commitsToCheckBuildStatus.size() + " commit statuses");
 
-			RepositoryModel repositoryModel = getRepositoryModel();
-			JenkinsHttpGate jenkinsGate = new JenkinsHttpGate(repositoryModel.CIUrl, repositoryModel.jenkinsUsername,
-															  repositoryModel.jenkinsApiToken, repositoryModel.jobname);
-			List<String> commitSha1Hashes = new ArrayList<>();
-			for (RevCommit commit : commitsToCheckBuildStatus) {
-				commitSha1Hashes.add(commit.getName());
-			}
+			int toCheckCount = commitsToCheckBuildStatus.size();
+			logger.info("Requesting " + toCheckCount + " commit statuses");
+
 			int updatedCount = 0;
-			try {
-				List<BuildInfo> buildInfos = jenkinsGate.getCommitBuildStatuses(commitSha1Hashes);
-				logger.info("Received information for " + buildInfos.size() + " commits");
-				// now handle the jenkins response and add git notes to commits
-				for (BuildInfo buildInfo : buildInfos) {
-					String sha1 = buildInfo.getCommit();
-					String buildUrl = buildInfo.getUrl();
-					CIScore buildStatus = buildInfo.getBuildStatus();
+			if (commitsToCheckBuildStatus.size() > 0) {
+				RepositoryModel repositoryModel = getRepositoryModel();
+				JenkinsHttpGate jenkinsGate = new JenkinsHttpGate(repositoryModel.CIUrl, repositoryModel.jenkinsUsername,
+						repositoryModel.jenkinsApiToken, repositoryModel.jobname);
+				List<String> commitSha1Hashes = new ArrayList<>();
+				for (RevCommit commit : commitsToCheckBuildStatus) {
+					commitSha1Hashes.add(commit.getName());
+				}
 
-					for (RevCommit commit : commits) {
-						if (!CIScore.restarted.equals(buildStatus) && Objects.equals(commit.getName(), sha1)) {
+				try {
+					List<BuildInfo> buildInfos = jenkinsGate.getCommitBuildStatuses(commitSha1Hashes);
+					// If there's no BuildInfo for commit then either this commit was pushed
+					// with another commits (and not the latest one) or there're no build
+					// or pending build task for this commit in Jenkins
+					if (buildInfos.size() < commitsToCheckBuildStatus.size() - commitsWithEmptyNoteCount) {
+						for (BuildInfo buildInfo : buildInfos) {
+							String sha1 = buildInfo.getCommit();
+							for (Iterator<RevCommit> iterator = commitsWithPendingStatus.iterator(); iterator.hasNext();) {
+								RevCommit commit = iterator.next();
+								if (Objects.equals(commit.getName(), sha1)) {
+									iterator.remove();
+								}
+							}
+						}
+						// need to change commit's status from pending to not_started_yet
+						for (RevCommit commit : commitsWithPendingStatus) {
 							String noteToAdd = JenkinsGitNoteUtils.createNoteBuilder()
-									.addCiBuildStatus(buildStatus)
-									.addCiJobUrl(buildUrl)
+									.addBuildInvocationTime(new Date())
 									.build();
 							JGitUtils.addNote(getRepository(), commit.getName(), noteToAdd);
 							updatedCount++;
-							break;
 						}
 					}
+
+					logger.info("Received information for " + buildInfos.size() + " commits");
+					// now handle the jenkins response and add git notes to commits
+					for (BuildInfo buildInfo : buildInfos) {
+						String sha1 = buildInfo.getCommit();
+						String buildUrl = buildInfo.getUrl();
+						CIScore buildStatus = buildInfo.getBuildStatus();
+
+						for (RevCommit commit : commitsToCheckBuildStatus) {
+							if (Objects.equals(commit.getName(), sha1)) {
+								if (buildStatus == JenkinsGitNoteUtils.readCiBuildStatus(getNoteForCommit(commit))) {
+									break;
+								}
+
+								String noteToAdd = JenkinsGitNoteUtils.createNoteBuilder()
+										.addCiBuildStatus(buildStatus)
+										.addCiJobUrl(buildUrl)
+										.build();
+								JGitUtils.addNote(getRepository(), commit.getName(), noteToAdd);
+								updatedCount++;
+								break;
+							}
+						}
+					}
+				} catch (JenkinsException e) {
+					logger.warn("Exception while working with Jenkins during the build statuses update", e);
 				}
-			} catch (JenkinsException e) {
-				logger.warn("Exception while working with Jenkins during the build statuses update", e);
 			}
-			return updatedCount;
+
+			return new UpdateCommitStatusesCount(toCheckCount, updatedCount);
 		}
 	}
 
@@ -1990,13 +2067,45 @@ public class TicketPage extends RepositoryPage {
 		return TimeUnit.SECONDS.toDays(secondsDiff) > DAYS_TO_UPDATE_COMMIT_STATUSES;
 	}
 
+
+	private void updatePanels(AjaxRequestTarget target) {
+		// read the actual data from git notes
+		CiScoreInfo ciScoreInfo = new CiScoreInfo(ciIntegrationEnabled, currentPatchset);
+
+		// CI build status at 'Discussion' tab
+		if (ticketBuildStatusPanel != null) {
+			// For some reason it's impossible to replace ticketBuildStatusPanel here (maybe Wicket bug).
+			// Have to use Javascript to do it.
+			String newBuildStatusHtml = String.format("<td><i class=\"%s\"></i> <span><a href=\"%s\">%s</a></span></td>",
+					ciScoreInfo.ciScoreCssClass, ciScoreInfo.ciBuildUrl != null ? ciScoreInfo.ciBuildUrl : '#',
+					ciScoreInfo.ciScoreDesc);
+			target.appendJavascript("$(\"#ticketBuildStatusRow td\")" +
+					".replaceWith('" + newBuildStatusHtml + "');");
+		}
+
+		// CI Approvals panel at 'Commits' tab
+		if (ciApprovalsPanel != null) {
+			// Parent is needed for multiple updates ciApprovalsPanel
+			// otherwise ciApprovalsPanel forgets its parent after first update
+			MarkupContainer panel = ciApprovalsPanel.getParent();
+			ciApprovalsPanel = createApprovalsPanel(ciScoreInfo);
+			panel.replace(ciApprovalsPanel);
+			target.addComponent(panel);
+		}
+
+		// Commits View at 'Commits' tab
+		if (commitsView != null) {
+			MarkupContainer container = commitsView.getParent();
+			target.addComponent(container);
+		}
+	}
+
+
 	private class CommitStatusUpdateAjaxBehavior extends AbstractDefaultAjaxBehavior {
 		private final List<RevCommit> commits;
-		private final Component commitsView;
 
-		private CommitStatusUpdateAjaxBehavior(List<RevCommit> commits, Component commitsView) {
+		private CommitStatusUpdateAjaxBehavior(List<RevCommit> commits) {
 			this.commits = commits;
-			this.commitsView = commitsView;
 		}
 
 		@Override
@@ -2017,38 +2126,38 @@ public class TicketPage extends RepositoryPage {
 			}
 			if (ciApprovalsPanel != null) {
 				ciApprovalsPanel.setOutputMarkupId(true);
+				ciApprovalsPanel.getParent().setOutputMarkupId(true);
 			}
 		}
 
 		@Override
 		protected void respond(AjaxRequestTarget target) {
 			// request the build statuses from Jenkins
-			int updatedCount = updateCommitStatuses(commits);
-			if (updatedCount > 0) {
-				// update the commits view
-				MarkupContainer container = commitsView.getParent();
-				target.addComponent(container);
+			UpdateCommitStatusesCount updateCommitStatusesCount = updateCommitStatuses(commits);
+			if (updateCommitStatusesCount.getUpdatedCount() > 0) {
+				updatePanels(target);
+			}
+		}
+	}
 
-				// read the actual data from git notes
-				CiScoreInfo ciScoreInfo = new CiScoreInfo(ciIntegrationEnabled, currentPatchset);
+	private class CommitStatusUpdateAjaxBehaviorOnTimer extends AbstractAjaxTimerBehavior {
+		private final List<RevCommit> commits;
+		private int toCheckCount;
 
-				// CI build status at 'Discussion' tab
-				if (ticketBuildStatusPanel != null) {
-					// For some reason it's impossible to replace ticketBuildStatusPanel here (maybe Wicket bug).
-					// Have to use Javascript to do it.
-					String newBuildStatusHtml = String.format("<i class=\"%s\"></i><a href=\"%s\">%s</a>",
-															  ciScoreInfo.ciScoreCssClass, ciScoreInfo.ciBuildUrl,
-															  ciScoreInfo.ciScoreDesc);
-					newBuildStatusHtml = "<span>" + newBuildStatusHtml + "</span>";
-					target.appendJavascript("$(\"#ticketBuildStatusRow td\")" +
-													".replaceWith('" + newBuildStatusHtml + "');");
-				}
+		private CommitStatusUpdateAjaxBehaviorOnTimer(List<RevCommit> commits) {
+			super(COMMIT_STATUS_UPDATE_INTERVAL);
+			this.commits = commits;
+		}
 
-				// CI Approvals panel at 'Commits' tab
-				if (ciApprovalsPanel != null) {
-					ciApprovalsPanel.replaceWith(createApprovalsPanel(ciScoreInfo));
-					target.addComponent(ciApprovalsPanel);
-				}
+		@Override
+		protected void onTimer(AjaxRequestTarget target) {
+			// request the build statuses from Jenkins
+			UpdateCommitStatusesCount updateCommitStatusesCount = updateCommitStatuses(commits);
+			if (toCheckCount != updateCommitStatusesCount.getToCheckCount()) {
+				toCheckCount = updateCommitStatusesCount.getToCheckCount();
+				updatePanels(target);
+			} else if (updateCommitStatusesCount.getUpdatedCount() > 0) {
+				updatePanels(target);
 			}
 		}
 	}
