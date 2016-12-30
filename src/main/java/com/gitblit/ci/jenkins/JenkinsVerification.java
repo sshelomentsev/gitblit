@@ -55,7 +55,7 @@ public class JenkinsVerification {
         if (200 == code) {
             JenkinsGitNoteUtils.GitNoteBuilder builder = JenkinsGitNoteUtils.createNoteBuilder();
             builder.addBuildInvocationTime(new Date());
-            TicketModel.CIScore score = restart ? TicketModel.CIScore.restarted : TicketModel.CIScore.in_progress;
+            TicketModel.CIScore score = restart ? TicketModel.CIScore.restarted : TicketModel.CIScore.not_started_yet;
             builder.addCiBuildStatus(score);
             builder.addCiJobUrl(uriStr);
             String note = builder.build();

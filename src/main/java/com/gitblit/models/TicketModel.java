@@ -1525,7 +1525,7 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 	}
 
 	public enum CIScore {
-		success(0), unstable(1), failed(2), in_progress(3), aborted(4), not_started_yet(5), restarted(6);
+		success(0), unstable(1), failed(2), in_progress(3), aborted(4), not_started_yet(5), restarted(6), pending(7);
 
 		final int value;
 
@@ -1566,6 +1566,9 @@ public class TicketModel implements Serializable, Comparable<TicketModel> {
 			}
 			if ("ABORTED".equalsIgnoreCase(jenkinsBuildResult)) {
 				return aborted;
+			}
+			if ("PENDING".equalsIgnoreCase(jenkinsBuildResult)) {
+				return pending;
 			}
 			throw new NoSuchElementException(jenkinsBuildResult);
 		}
